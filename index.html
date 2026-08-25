@@ -1,0 +1,1563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super 3D Math Racers</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Kid-Friendly Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Luckiest+Guy&display=swap" rel="stylesheet">
+    <!-- Three.js 3D Engine -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- PeerJS for P2P Multiplayer -->
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background: linear-gradient(135deg, #1a0b36 0%, #2b1055 50%, #4a154b 100%);
+            color: #ffffff;
+            user-select: none;
+            overflow-x: hidden;
+        }
+
+        .font-title {
+            font-family: 'Luckiest Guy', cursive;
+            letter-spacing: 1.5px;
+        }
+
+        /* Kid-Friendly Toy Button Styling */
+        .toy-btn {
+            position: relative;
+            transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 8px 0 rgba(0, 0, 0, 0.35);
+        }
+        .toy-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 0 rgba(0, 0, 0, 0.35);
+        }
+        .toy-btn:active {
+            transform: translateY(6px);
+            box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+        }
+
+        /* Glow & Card Effects */
+        .glass-panel {
+            background: rgba(23, 15, 48, 0.85);
+            backdrop-filter: blur(12px);
+            border: 4px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), inset 0 2px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        /* Screen Shake Effect */
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            20% { transform: translate(-4px, 0px) rotate(-1deg); }
+            40% { transform: translate(4px, -1px) rotate(1deg); }
+            60% { transform: translate(-4px, 1px) rotate(0deg); }
+            80% { transform: translate(4px, 1px) rotate(1deg); }
+            100% { transform: translate(1px, -2px) rotate(0deg); }
+        }
+        .shake {
+            animation: shake 0.35s ease-in-out;
+        }
+
+        /* Bouncy Pulse Animation */
+        @keyframes bounce-gentle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        .animate-bounce-gentle {
+            animation: bounce-gentle 2s infinite ease-in-out;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #100624;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #ff2a85;
+            border-radius: 999px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between relative">
+
+    <!-- TOP NAVIGATION HEADER -->
+    <header class="p-3 sm:p-4 bg-slate-950/70 border-b-4 border-yellow-400 flex justify-between items-center z-30 relative backdrop-blur-md">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-full bg-yellow-400 flex items-center justify-center text-purple-900 text-2xl font-black shadow-lg animate-bounce-gentle">
+                <i class="fa-solid fa-flag-checkered"></i>
+            </div>
+            <h1 class="font-title text-xl sm:text-3xl text-yellow-300 drop-shadow-[0_4px_0_rgba(0,0,0,0.8)] tracking-wide">
+                SUPER <span class="text-pink-500">3D</span> MATH RACERS
+            </h1>
+        </div>
+        
+        <div class="flex items-center space-x-3">
+            <button id="soundToggle" onclick="toggleAudio()" class="w-11 h-11 rounded-2xl bg-purple-700 border-2 border-purple-400 hover:bg-purple-600 transition flex items-center justify-center text-yellow-300 text-xl shadow-md" title="Toggle Sound">
+                <i id="soundIcon" class="fa-solid fa-volume-high"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- CUSTOM MODAL DIALOG (No alert!) -->
+    <div id="customModal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="glass-panel rounded-3xl p-6 sm:p-8 max-w-md w-full text-center space-y-5 border-4 border-yellow-400">
+            <div class="w-16 h-16 rounded-full bg-yellow-400 text-purple-900 mx-auto flex items-center justify-center text-3xl font-black shadow-lg">
+                <i class="fa-solid fa-circle-exclamation"></i>
+            </div>
+            <h3 id="modalTitle" class="font-title text-yellow-300 text-2xl">ATTENTION</h3>
+            <p id="modalMessage" class="text-xl text-purple-100 font-bold">Message content here</p>
+            <button onclick="closeModal()" class="toy-btn bg-pink-500 hover:bg-pink-400 text-white font-title py-3 px-8 rounded-2xl text-lg uppercase w-full">
+                OK, GOT IT!
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN INTERACTIVE CONTAINER -->
+    <main class="flex-grow flex flex-col items-center justify-center p-2 sm:p-6 z-20">
+
+        <!-- SCREEN 1: HOME SETUP SCREEN -->
+        <section id="homeScreen" class="w-full max-w-4xl glass-panel rounded-3xl p-4 sm:p-8 space-y-6">
+            <div class="text-center space-y-2">
+                <h2 class="font-title text-2xl sm:text-4xl text-yellow-300 drop-shadow-[0_4px_0_rgba(0,0,0,0.8)]">READY, SET, SOLVE! 🏎️💨</h2>
+                <p class="text-lg sm:text-xl text-purple-200 font-semibold">Answer 10 math equations to zoom past the 3D finish line!</p>
+            </div>
+
+            <!-- Player Configuration & 3D Kart Preview -->
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-6 bg-slate-900/80 p-5 rounded-2xl border-2 border-purple-500/40">
+                <!-- Inputs & Pickers -->
+                <div class="md:col-span-7 space-y-4">
+                    <div>
+                        <label class="block font-title text-sm text-yellow-300 mb-2">RACER NAME:</label>
+                        <input type="text" id="playerNameInput" maxlength="12" value="Turbo Kid" 
+                            class="w-full bg-purple-950 text-yellow-300 border-4 border-yellow-400 rounded-2xl p-3 text-2xl focus:outline-none focus:border-pink-500 font-bold text-center tracking-wide shadow-inner">
+                    </div>
+
+                    <div>
+                        <label class="block font-title text-sm text-yellow-300 mb-2">KART COLOR:</label>
+                        <div class="flex space-x-3 pt-1" id="colorPicker">
+                            <button onclick="selectCarColor('#ff0055')" class="w-12 h-12 rounded-2xl bg-pink-500 border-4 border-white shadow-lg transition transform hover:scale-110 color-btn ring-4 ring-yellow-400" data-color="#ff0055"></button>
+                            <button onclick="selectCarColor('#00f0ff')" class="w-12 h-12 rounded-2xl bg-cyan-400 border-4 border-white shadow-lg transition transform hover:scale-110 color-btn" data-color="#00f0ff"></button>
+                            <button onclick="selectCarColor('#ffe600')" class="w-12 h-12 rounded-2xl bg-yellow-400 border-4 border-white shadow-lg transition transform hover:scale-110 color-btn" data-color="#ffe600"></button>
+                            <button onclick="selectCarColor('#10b981')" class="w-12 h-12 rounded-2xl bg-emerald-400 border-4 border-white shadow-lg transition transform hover:scale-110 color-btn" data-color="#10b981"></button>
+                            <button onclick="selectCarColor('#a855f7')" class="w-12 h-12 rounded-2xl bg-purple-500 border-4 border-white shadow-lg transition transform hover:scale-110 color-btn" data-color="#a855f7"></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live 3D Preview Canvas -->
+                <div class="md:col-span-5 flex flex-col items-center justify-center bg-purple-950/60 rounded-2xl border-2 border-purple-400 p-2 relative overflow-hidden h-48 md:h-auto">
+                    <span class="absolute top-2 left-3 font-title text-xs text-yellow-300 bg-purple-900/80 px-2 py-1 rounded-lg border border-yellow-400/50">3D KART PREVIEW</span>
+                    <canvas id="previewCanvas" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
+                </div>
+            </div>
+
+            <!-- Difficulty & Digits Selection -->
+            <div class="space-y-4">
+                <div>
+                    <label class="block font-title text-sm text-yellow-300 mb-2">DIFFICULTY LEVEL:</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <button onclick="setDifficulty('beginner')" id="diff-beginner" class="diff-btn toy-btn p-4 rounded-2xl border-4 border-pink-500 bg-pink-600/40 text-left transition">
+                            <div class="font-title text-base text-yellow-300">BEGINNER</div>
+                            <div class="text-sm text-purple-200 font-bold">Lower Primary</div>
+                            <div class="text-xs text-pink-300 font-extrabold mt-1">( + , - )</div>
+                        </button>
+                        <button onclick="setDifficulty('intermediate')" id="diff-intermediate" class="diff-btn toy-btn p-4 rounded-2xl border-4 border-purple-700 bg-purple-950/60 text-left transition">
+                            <div class="font-title text-base text-cyan-300">INTERMEDIATE</div>
+                            <div class="text-sm text-purple-200 font-bold">Higher Primary</div>
+                            <div class="text-xs text-cyan-300 font-extrabold mt-1">( + , - , × , ÷ )</div>
+                        </button>
+                        <button onclick="setDifficulty('advanced')" id="diff-advanced" class="diff-btn toy-btn p-4 rounded-2xl border-4 border-purple-700 bg-purple-950/60 text-left transition">
+                            <div class="font-title text-base text-emerald-300">ADVANCED</div>
+                            <div class="text-sm text-purple-200 font-bold">Lower Secondary</div>
+                            <div class="text-xs text-emerald-300 font-extrabold mt-1">(Signed, Order, x)</div>
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-title text-sm text-yellow-300 mb-2">NUMBER OF DIGITS:</label>
+                    <div class="grid grid-cols-3 gap-3">
+                        <button onclick="setDigits(1)" id="digit-1" class="digit-btn toy-btn py-3 px-4 rounded-2xl border-4 border-pink-500 bg-pink-600/40 text-center font-title text-lg">1 DIGIT</button>
+                        <button onclick="setDigits(2)" id="digit-2" class="digit-btn toy-btn py-3 px-4 rounded-2xl border-4 border-purple-700 bg-purple-950/60 text-center font-title text-lg">2 DIGITS</button>
+                        <button onclick="setDigits(3)" id="digit-3" class="digit-btn toy-btn py-3 px-4 rounded-2xl border-4 border-purple-700 bg-purple-950/60 text-center font-title text-lg">3 DIGITS</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Single Player & P2P Switcher -->
+            <div class="border-t-2 border-purple-600/40 pt-5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Single Player Vs Bots -->
+                    <div class="bg-purple-950/80 p-5 rounded-2xl border-2 border-cyan-400 flex flex-col justify-between space-y-4">
+                        <div>
+                            <h3 class="font-title text-lg text-cyan-300"><i class="fa-solid fa-robot mr-2"></i>SOLO VS BOTS</h3>
+                            <p class="text-sm text-purple-200 font-medium mt-1">Race against 3 AI Bot drivers in 3D!</p>
+                        </div>
+                        <button onclick="startSinglePlayerGame()" class="toy-btn w-full bg-cyan-400 hover:bg-cyan-300 text-purple-950 font-title py-4 rounded-2xl text-lg uppercase tracking-wide">
+                            PLAY SOLO
+                        </button>
+                    </div>
+
+                    <!-- PeerJS Multiplayer -->
+                    <div class="bg-purple-950/80 p-5 rounded-2xl border-2 border-pink-500 flex flex-col justify-between space-y-4">
+                        <div>
+                            <h3 class="font-title text-lg text-pink-400"><i class="fa-solid fa-users mr-2"></i>P2P MULTIPLAYER</h3>
+                            <p class="text-sm text-purple-200 font-medium mt-1">Host a 3D race room or join friends!</p>
+                        </div>
+                        <div class="flex space-x-3">
+                            <button onclick="createP2PLobby()" class="toy-btn flex-1 bg-pink-500 hover:bg-pink-400 text-white font-title py-4 rounded-2xl text-base uppercase">
+                                HOST
+                            </button>
+                            <button onclick="showJoinInput()" class="toy-btn flex-1 bg-yellow-400 hover:bg-yellow-300 text-purple-950 font-title py-4 rounded-2xl text-base uppercase">
+                                JOIN
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Join Code Input Drawer -->
+                <div id="joinCodeDrawer" class="hidden mt-4 bg-purple-950 p-4 rounded-2xl border-2 border-yellow-400 flex flex-col sm:flex-row items-center gap-3">
+                    <input type="text" id="joinRoomInput" placeholder="ENTER 6-CHAR CODE" class="uppercase text-center font-title bg-slate-900 border-2 border-yellow-400 rounded-xl p-3 text-lg text-yellow-300 w-full focus:outline-none">
+                    <button onclick="joinP2PLobby()" class="toy-btn bg-yellow-400 hover:bg-yellow-300 text-purple-950 font-title py-3 px-8 rounded-xl text-base w-full sm:w-auto whitespace-nowrap">
+                        CONNECT
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 2: MULTIPLAYER LOBBY SCREEN -->
+        <section id="lobbyScreen" class="hidden w-full max-w-2xl glass-panel rounded-3xl p-6 sm:p-8 space-y-6">
+            <div class="text-center space-y-3">
+                <span class="bg-pink-500/30 border border-pink-400 text-pink-300 px-4 py-1.5 rounded-full font-title text-sm">P2P 3D RACE LOBBY</span>
+                <h2 class="font-title text-3xl text-yellow-300">WAITING FOR RACERS...</h2>
+                
+                <div class="bg-purple-950/90 p-4 rounded-2xl border-4 border-yellow-400 inline-block mt-2">
+                    <div class="text-xs text-purple-300 font-title mb-1">ROOM CODE:</div>
+                    <div class="flex items-center justify-center space-x-3">
+                        <span id="roomCodeDisplay" class="font-title text-3xl sm:text-4xl text-cyan-300 tracking-widest">______</span>
+                        <button onclick="copyRoomCode()" class="w-10 h-10 rounded-xl bg-pink-500 hover:bg-pink-400 text-white text-lg flex items-center justify-center transition shadow" title="Copy Room Code">
+                            <i class="fa-solid fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Connected Racers List -->
+            <div class="space-y-3">
+                <h3 class="font-title text-sm text-cyan-300">RACERS IN LOBBY (<span id="playerCountText">1</span>/4):</h3>
+                <div id="lobbyPlayerList" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <!-- Cards injected dynamically -->
+                </div>
+            </div>
+
+            <div class="flex space-x-4 pt-2">
+                <button onclick="leaveLobby()" class="toy-btn flex-1 bg-gray-700 hover:bg-gray-600 text-white font-title py-4 rounded-2xl text-base">
+                    LEAVE
+                </button>
+                <button id="startLobbyBtn" onclick="hostStartMultiplayerGame()" class="toy-btn flex-1 bg-emerald-400 hover:bg-emerald-300 text-purple-950 font-title py-4 rounded-2xl text-lg uppercase">
+                    START 3D RACE!
+                </button>
+            </div>
+        </section>
+
+        <!-- SCREEN 3: 3D RACE & MATH HUD SCREEN -->
+        <section id="gameScreen" class="hidden w-full max-w-5xl space-y-4">
+            
+            <!-- 3D RACE CANVAS DISPLAY -->
+            <div class="relative bg-purple-950/90 rounded-3xl border-4 border-cyan-400 overflow-hidden shadow-2xl p-2 sm:p-3">
+                
+                <!-- HUD Overlay Top Bar -->
+                <div class="flex justify-between items-center mb-2 font-title text-sm sm:text-base px-3 bg-purple-900/80 rounded-2xl p-2 border border-purple-400">
+                    <div class="text-pink-400">LAP: <span id="qCounter" class="text-yellow-300 text-xl">1</span>/10</div>
+                    <div class="text-cyan-300"><i class="fa-solid fa-stopwatch mr-2"></i><span id="gameTimer" class="text-xl">00:00</span></div>
+                    <div class="text-emerald-400">STREAK: <span id="streakCounter" class="text-yellow-300 text-xl">0</span> 🔥</div>
+                </div>
+
+                <!-- 3D WebGL Canvas Container -->
+                <div id="canvas3DContainer" class="relative w-full h-64 sm:h-80 md:h-96 rounded-2xl overflow-hidden border-2 border-purple-500/50 bg-sky-900">
+                    <canvas id="raceCanvas3D" class="w-full h-full block"></canvas>
+                </div>
+            </div>
+
+            <!-- MATH CONSOLE / INPUT PAD -->
+            <div id="mathConsole" class="glass-panel rounded-3xl p-4 sm:p-6 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                
+                <!-- Equation Display Area -->
+                <div class="md:col-span-7 bg-purple-950/90 rounded-2xl p-5 border-4 border-pink-500 flex flex-col justify-center items-center relative min-h-[160px] shadow-inner">
+                    <div id="feedbackBanner" class="absolute top-2 font-title text-sm text-emerald-400 opacity-0 transition-opacity">CORRECT! +NITRO BOOST 🚀</div>
+                    
+                    <div id="equationDisplay" class="font-title text-3xl sm:text-5xl text-yellow-300 my-2 tracking-wider text-center drop-shadow-[0_4px_0_rgba(0,0,0,0.8)]">
+                        12 + 15 = ?
+                    </div>
+
+                    <!-- Answer Field & Clear -->
+                    <div class="flex items-center space-x-3 mt-3 w-full max-w-xs">
+                        <div id="answerBox" class="flex-grow bg-slate-950 border-4 border-cyan-400 rounded-2xl p-2.5 text-center font-title text-3xl text-white min-h-[56px] flex items-center justify-center tracking-widest shadow-inner">
+                            <span id="answerInputText" class="text-cyan-300"></span>
+                            <span class="animate-pulse text-pink-500 font-bold">|</span>
+                        </div>
+                        <button onclick="clearAnswer()" class="toy-btn bg-red-500 hover:bg-red-400 text-white font-title p-3.5 rounded-2xl text-base" title="Clear">
+                            <i class="fa-solid fa-backspace"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Touch & Mouse Keypad -->
+                <div class="md:col-span-5 grid grid-cols-3 gap-2 sm:gap-3">
+                    <button onclick="pressKey('1')" class="toy-btn bg-purple-900 hover:bg-purple-800 border-2 border-purple-400 text-yellow-300 font-title text-2xl py-3 rounded-2xl">1</button>
+                    <button onclick="pressKey('2')" class="toy-btn bg-purple-900 hover:bg-purple-800 border-2 border-purple-400 text-yellow-300 font-title text-2xl py-3 rounded-2xl">2</button>
+                    <button onclick="pressKey('3')" class="toy-btn bg-purple-900 hover:bg-purple-800 border-2 border-purple-400 text-yellow-300 font-title text-2xl py-3 rounded-2xl">3</button>
+                    <button onclick="pressKey('4')" class="toy-btn bg-purple-900 hover:bg-purple-800 border-2 border-purple-400 text-yellow-300 font-title text-2xl py-3 rounded-2xl">4</button>
+                    <button onclick="pressKey('5')" class="toy-btn bg-purple-900 hover:bg-purple-800 border-2 border-purple-400 text-yellow-300 font-title text-2xl py-3 rounded-2xl">5</button>
+                    <button onclick="pressKey('6')" class="toy-btn bg-purple-900 hover:bg-purple-800 border-2 border-purple-400 text-yellow-300 font-title text-2xl py-3 rounded-2xl">6</button>
+                    <button onclick="pressKey('7')" class="toy-btn bg-purple-900 hover:bg-purple-800 border-2 border-purple-400 text-yellow-300 font-title text-2xl py-3 rounded-2xl">7</button>
+                    <button onclick="pressKey('8')" class="toy-btn bg-purple-900 hover:bg-purple-800 border-2 border-purple-400 text-yellow-300 font-title text-2xl py-3 rounded-2xl">8</button>
+                    <button onclick="pressKey('9')" class="toy-btn bg-purple-900 hover:bg-purple-800 border-2 border-purple-400 text-yellow-300 font-title text-2xl py-3 rounded-2xl">9</button>
+                    <button onclick="pressKey('-')" class="toy-btn bg-purple-900 hover:bg-purple-800 border-2 border-purple-400 text-yellow-300 font-title text-2xl py-3 rounded-2xl">-</button>
+                    <button onclick="pressKey('0')" class="toy-btn bg-purple-900 hover:bg-purple-800 border-2 border-purple-400 text-yellow-300 font-title text-2xl py-3 rounded-2xl">0</button>
+                    <button onclick="submitAnswer()" class="toy-btn bg-emerald-400 hover:bg-emerald-300 text-purple-950 font-title text-xl py-3 rounded-2xl">
+                        GO!
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 4: GAME OVER RESULTS SCREEN -->
+        <section id="resultsScreen" class="hidden w-full max-w-2xl glass-panel rounded-3xl p-6 sm:p-8 space-y-6 text-center border-4 border-yellow-400">
+            <div class="space-y-3">
+                <i class="fa-solid fa-trophy text-6xl text-yellow-400 animate-bounce"></i>
+                <h2 id="resultTitle" class="font-title text-3xl sm:text-5xl text-yellow-300 drop-shadow-[0_4px_0_rgba(0,0,0,0.8)]">VICTORY LAP!</h2>
+                <p id="winnerSubtitle" class="text-2xl text-cyan-300 font-bold">Player 1 wins the checkered flag!</p>
+            </div>
+
+            <!-- Leaderboard Standings Table -->
+            <div class="bg-purple-950/90 p-4 rounded-2xl border-2 border-purple-500/50 space-y-3">
+                <h3 class="font-title text-sm text-yellow-300 text-left">FINAL LEADERBOARD:</h3>
+                <div id="standingsContainer" class="space-y-2">
+                    <!-- Standings populated dynamically -->
+                </div>
+            </div>
+
+            <!-- Match Stats -->
+            <div class="grid grid-cols-3 gap-3 bg-purple-950 p-4 rounded-2xl border-2 border-pink-500 text-center font-title">
+                <div>
+                    <div class="text-xs text-purple-300">TIME</div>
+                    <div id="statTime" class="text-cyan-300 text-xl">00:00</div>
+                </div>
+                <div>
+                    <div class="text-xs text-purple-300">ACCURACY</div>
+                    <div id="statAccuracy" class="text-pink-400 text-xl">100%</div>
+                </div>
+                <div>
+                    <div class="text-xs text-purple-300">BEST STREAK</div>
+                    <div id="statStreak" class="text-yellow-300 text-xl">10</div>
+                </div>
+            </div>
+
+            <button onclick="returnToHome()" class="toy-btn w-full bg-pink-500 hover:bg-pink-400 text-white font-title py-4 rounded-2xl text-xl uppercase">
+                MAIN MENU
+            </button>
+        </section>
+
+    </main>
+
+    <!-- FOOTER CREDITS -->
+    <footer class="p-3 bg-slate-950/80 text-center text-xs text-purple-300 font-title border-t-2 border-purple-600/30">
+        SUPER 3D MATH RACERS &bull; LEARN MATH IN 3D &bull; P2P MULTIPLAYER
+    </footer>
+
+    <script>
+        /* ==========================================================================
+           GLOBAL GAME STATE & CONFIGURATION
+           ========================================================================== */
+        const gameState = {
+            playerName: "Turbo Kid",
+            playerColor: "#ff0055",
+            difficulty: "beginner", // 'beginner', 'intermediate', 'advanced'
+            digits: 1,              // 1, 2, 3
+            isMultiplayer: false,
+            isHost: false,
+            roomId: null,
+            peer: null,
+            connections: {},        // peerId -> DataConnection
+            players: [],            // List of active racers: { id, name, color, isAi, progress, streak, totalCorrect, totalWrong, isFinished, finishTime, mesh }
+            questions: [],          // Array of 10 math questions: { eq, answer }
+            currentQIndex: 0,
+            userInput: "",
+            startTime: 0,
+            timerInterval: null,
+            soundEnabled: true,
+            streak: 0,
+            totalCorrect: 0,
+            totalWrong: 0
+        };
+
+        /* ==========================================================================
+           AUDIO SYNTHESIZER (Web Audio API for Cheerful Sounds)
+           ========================================================================== */
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new AudioContext();
+            }
+        }
+
+        function playRetroSound(type) {
+            if (!gameState.soundEnabled) return;
+            initAudio();
+            if (!audioCtx) return;
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'key') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(500, now);
+                gain.gain.setValueAtTime(0.08, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                osc.start(now);
+                osc.stop(now + 0.05);
+            } else if (type === 'correct') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+                osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
+                osc.frequency.setValueAtTime(1046.50, now + 0.24); // C6
+                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+                osc.start(now);
+                osc.stop(now + 0.4);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, now);
+                osc.frequency.setValueAtTime(140, now + 0.1);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'win') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(440, now);
+                osc.frequency.setValueAtTime(554.37, now + 0.12);
+                osc.frequency.setValueAtTime(659.25, now + 0.24);
+                osc.frequency.setValueAtTime(880, now + 0.36);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+                osc.start(now);
+                osc.stop(now + 0.7);
+            }
+        }
+
+        function toggleAudio() {
+            gameState.soundEnabled = !gameState.soundEnabled;
+            const icon = document.getElementById('soundIcon');
+            if (gameState.soundEnabled) {
+                icon.className = 'fa-solid fa-volume-high';
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark text-gray-400';
+            }
+        }
+
+        function showModal(title, message) {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalMessage').innerText = message;
+            document.getElementById('customModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('customModal').classList.add('hidden');
+        }
+
+        /* ==========================================================================
+           MATH EQUATION GENERATOR (10 Questions per Round)
+           ========================================================================== */
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function getDigitRange(digits) {
+            if (digits === 1) return { min: 1, max: 9 };
+            if (digits === 2) return { min: 10, max: 99 };
+            return { min: 100, max: 999 };
+        }
+
+        function generateMathQuestions(difficulty, digits) {
+            const questions = [];
+            const { min, max } = getDigitRange(digits);
+
+            for (let i = 0; i < 10; i++) {
+                let eq = "";
+                let ans = 0;
+
+                if (difficulty === 'beginner') {
+                    // Lower primary: Addition & Subtraction only
+                    const isAdd = Math.random() > 0.5;
+                    const num1 = getRandomInt(min, max);
+                    const num2 = getRandomInt(min, max);
+
+                    if (isAdd) {
+                        eq = `${num1} + ${num2}`;
+                        ans = num1 + num2;
+                    } else {
+                        const bigger = Math.max(num1, num2);
+                        const smaller = Math.min(num1, num2);
+                        eq = `${bigger} - ${smaller}`;
+                        ans = bigger - smaller;
+                    }
+
+                } else if (difficulty === 'intermediate') {
+                    // Higher primary: +, -, ×, ÷
+                    const ops = ['+', '-', '*', '/'];
+                    const op = ops[Math.floor(Math.random() * ops.length)];
+
+                    if (op === '+') {
+                        const a = getRandomInt(min, max);
+                        const b = getRandomInt(min, max);
+                        eq = `${a} + ${b}`;
+                        ans = a + b;
+                    } else if (op === '-') {
+                        const a = getRandomInt(min, max);
+                        const b = getRandomInt(min, max);
+                        const bigger = Math.max(a, b);
+                        const smaller = Math.min(a, b);
+                        eq = `${bigger} - ${smaller}`;
+                        ans = bigger - smaller;
+                    } else if (op === '*') {
+                        const mulMax = digits === 1 ? 9 : (digits === 2 ? 15 : 25);
+                        const a = getRandomInt(2, mulMax);
+                        const b = getRandomInt(2, mulMax);
+                        eq = `${a} × ${b}`;
+                        ans = a * b;
+                    } else if (op === '/') {
+                        const divMax = digits === 1 ? 9 : (digits === 2 ? 12 : 20);
+                        const divisor = getRandomInt(2, divMax);
+                        const quotient = getRandomInt(1, divMax);
+                        const dividend = divisor * quotient;
+                        eq = `${dividend} ÷ ${divisor}`;
+                        ans = quotient;
+                    }
+
+                } else {
+                    // Advanced: Signed numbers, multi-step, simple linear x
+                    const mode = Math.random();
+
+                    if (mode < 0.35) {
+                        const a = getRandomInt(-15 * digits, 15 * digits);
+                        const b = getRandomInt(-15 * digits, 15 * digits);
+                        const isAdd = Math.random() > 0.5;
+                        if (isAdd) {
+                            eq = `(${a}) + (${b})`;
+                            ans = a + b;
+                        } else {
+                            eq = `(${a}) - (${b})`;
+                            ans = a - b;
+                        }
+                    } else if (mode < 0.7) {
+                        const a = getRandomInt(2, 9);
+                        const b = getRandomInt(2, 9);
+                        const c = getRandomInt(1, 9);
+                        eq = `${a} × (${b} + ${c})`;
+                        ans = a * (b + c);
+                    } else {
+                        const x = getRandomInt(1, 12);
+                        const coef = getRandomInt(2, 5);
+                        const constant = getRandomInt(1, 20);
+                        const result = coef * x + constant;
+                        eq = `${coef}x + ${constant} = ${result}  (x = ?)`;
+                        ans = x;
+                    }
+                }
+
+                questions.push({ eq, answer: ans });
+            }
+
+            return questions;
+        }
+
+        /* ==========================================================================
+           THREE.JS PROCEDURAL 3D KART BUILDER & UTILITIES
+           ========================================================================== */
+        function create3DKart(colorHex) {
+            const kartGroup = new THREE.Group();
+
+            // Main Kart Body (Chassis)
+            const bodyGeo = new THREE.BoxGeometry(1.6, 0.6, 2.6);
+            const bodyMat = new THREE.MeshToonMaterial({ color: colorHex });
+            const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
+            bodyMesh.position.y = 0.5;
+            kartGroup.add(bodyMesh);
+
+            // Windshield / Cockpit
+            const cabinGeo = new THREE.BoxGeometry(1.2, 0.5, 1.1);
+            const cabinMat = new THREE.MeshToonMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.8 });
+            const cabinMesh = new THREE.Mesh(cabinGeo, cabinMat);
+            cabinMesh.position.set(0, 0.9, -0.2);
+            kartGroup.add(cabinMesh);
+
+            // Rear Spoiler
+            const spoilerBarGeo = new THREE.BoxGeometry(1.4, 0.15, 0.4);
+            const spoilerBarMat = new THREE.MeshToonMaterial({ color: 0x111111 });
+            const spoilerBar = new THREE.Mesh(spoilerBarGeo, spoilerBarMat);
+            spoilerBar.position.set(0, 1.1, 1.1);
+            kartGroup.add(spoilerBar);
+
+            const wingGeo1 = new THREE.BoxGeometry(0.1, 0.5, 0.1);
+            const w1 = new THREE.Mesh(wingGeo1, spoilerBarMat);
+            w1.position.set(-0.5, 0.8, 1.1);
+            const w2 = new THREE.Mesh(wingGeo1, spoilerBarMat);
+            w2.position.set(0.5, 0.8, 1.1);
+            kartGroup.add(w1);
+            kartGroup.add(w2);
+
+            // Headlights
+            const headMat = new THREE.MeshBasicMaterial({ color: 0xffea00 });
+            const headGeo = new THREE.CylinderGeometry(0.18, 0.18, 0.1, 16);
+            headGeo.rotateX(Math.PI / 2);
+            const hl = new THREE.Mesh(headGeo, headMat);
+            hl.position.set(-0.5, 0.55, -1.31);
+            const hr = new THREE.Mesh(headGeo, headMat);
+            hr.position.set(0.5, 0.55, -1.31);
+            kartGroup.add(hl);
+            kartGroup.add(hr);
+
+            // 4 Wheels
+            const wheelGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.3, 16);
+            wheelGeo.rotateZ(Math.PI / 2);
+            const wheelMat = new THREE.MeshToonMaterial({ color: 0x222222 });
+            const hubMat = new THREE.MeshToonMaterial({ color: 0xdddddd });
+
+            const wheelPositions = [
+                [-0.9, 0.35, -0.8], // Front Left
+                [0.9, 0.35, -0.8],  // Front Right
+                [-0.9, 0.35, 0.8],  // Rear Left
+                [0.9, 0.35, 0.8]    // Rear Right
+            ];
+
+            const wheels = [];
+            wheelPositions.forEach(pos => {
+                const wheelGroup = new THREE.Group();
+                const tyre = new THREE.Mesh(wheelGeo, wheelMat);
+                wheelGroup.add(tyre);
+
+                const hubGeo = new THREE.CylinderGeometry(0.18, 0.18, 0.32, 12);
+                hubGeo.rotateZ(Math.PI / 2);
+                const hub = new THREE.Mesh(hubGeo, hubMat);
+                wheelGroup.add(hub);
+
+                wheelGroup.position.set(...pos);
+                kartGroup.add(wheelGroup);
+                wheels.push(wheelGroup);
+            });
+
+            kartGroup.userData = { wheels, colorHex, bodyMat };
+            return kartGroup;
+        }
+
+        /* ==========================================================================
+           3D PREVIEW CANVAS (Home Screen)
+           ========================================================================== */
+        let previewScene, previewCamera, previewRenderer, previewKart;
+
+        function init3DPreview() {
+            const canvas = document.getElementById('previewCanvas');
+            const width = canvas.clientWidth || 300;
+            const height = canvas.clientHeight || 200;
+
+            previewScene = new THREE.Scene();
+
+            previewCamera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+            previewCamera.position.set(3, 2.5, 4);
+            previewCamera.lookAt(0, 0.5, 0);
+
+            previewRenderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+            previewRenderer.setSize(width, height);
+            previewRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+            previewScene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(5, 10, 7);
+            previewScene.add(dirLight);
+
+            // Add Kart
+            previewKart = create3DKart(gameState.playerColor);
+            previewScene.add(previewKart);
+
+            // Animate spin
+            function animatePreview() {
+                if (document.getElementById('homeScreen').classList.contains('hidden')) return;
+                requestAnimationFrame(animatePreview);
+
+                if (previewKart) {
+                    previewKart.rotation.y += 0.015;
+                    // Rotate wheels slowly
+                    previewKart.userData.wheels.forEach(w => w.rotation.x += 0.03);
+                }
+
+                previewRenderer.render(previewScene, previewCamera);
+            }
+            animatePreview();
+        }
+
+        function updatePreviewColor(colorHex) {
+            if (previewKart && previewKart.userData.bodyMat) {
+                previewKart.userData.bodyMat.color.set(colorHex);
+            }
+        }
+
+        /* ==========================================================================
+           HOME SCREEN & CONFIG HANDLERS
+           ========================================================================== */
+        function selectCarColor(color) {
+            gameState.playerColor = color;
+            updatePreviewColor(color);
+
+            document.querySelectorAll('.color-btn').forEach(btn => {
+                if (btn.dataset.color === color) {
+                    btn.classList.add('ring-4', 'ring-yellow-400', 'scale-110');
+                } else {
+                    btn.classList.remove('ring-4', 'ring-yellow-400', 'scale-110');
+                }
+            });
+        }
+
+        function setDifficulty(diff) {
+            gameState.difficulty = diff;
+            document.querySelectorAll('.diff-btn').forEach(btn => {
+                btn.className = "diff-btn toy-btn p-4 rounded-2xl border-4 border-purple-700 bg-purple-950/60 text-left transition";
+            });
+            const activeBtn = document.getElementById(`diff-${diff}`);
+            activeBtn.className = "diff-btn toy-btn p-4 rounded-2xl border-4 border-pink-500 bg-pink-600/40 text-left transition";
+        }
+
+        function setDigits(num) {
+            gameState.digits = num;
+            document.querySelectorAll('.digit-btn').forEach(btn => {
+                btn.className = "digit-btn toy-btn py-3 px-4 rounded-2xl border-4 border-purple-700 bg-purple-950/60 text-center font-title text-lg";
+            });
+            const activeBtn = document.getElementById(`digit-${num}`);
+            activeBtn.className = "digit-btn toy-btn py-3 px-4 rounded-2xl border-4 border-pink-500 bg-pink-600/40 text-center font-title text-lg";
+        }
+
+        function getPlayerNameInput() {
+            const val = document.getElementById('playerNameInput').value.trim();
+            return val ? val : "Turbo Kid";
+        }
+
+        /* ==========================================================================
+           PEERJS MULTIPLAYER LOGIC
+           ========================================================================== */
+        function generateRoomCode() {
+            const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+            let code = "";
+            for (let i = 0; i < 6; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return code;
+        }
+
+        function createP2PLobby() {
+            initAudio();
+            gameState.playerName = getPlayerNameInput();
+            gameState.isMultiplayer = true;
+            gameState.isHost = true;
+            gameState.roomId = generateRoomCode();
+
+            try {
+                gameState.peer = new Peer(`MATH3D-${gameState.roomId}`);
+            } catch (e) {
+                showModal("PEERJS ERROR", "Failed to initialize PeerJS network connection.");
+                return;
+            }
+
+            gameState.peer.on('open', (id) => {
+                showLobbyScreen();
+                setupHostPlayerState();
+            });
+
+            gameState.peer.on('connection', (conn) => {
+                conn.on('open', () => {
+                    if (gameState.players.length >= 4) {
+                        conn.send({ type: 'FULL' });
+                        conn.close();
+                        return;
+                    }
+
+                    const connId = conn.peer;
+                    gameState.connections[connId] = conn;
+
+                    conn.on('data', (data) => {
+                        handlePeerData(connId, data);
+                    });
+
+                    conn.on('close', () => {
+                        handlePeerDisconnect(connId);
+                    });
+                });
+            });
+
+            gameState.peer.on('error', (err) => {
+                console.error("PeerJS error:", err);
+                showModal("CONNECTION ERROR", "Room code collision or server error. Try again!");
+            });
+        }
+
+        function showJoinInput() {
+            const drawer = document.getElementById('joinCodeDrawer');
+            drawer.classList.toggle('hidden');
+        }
+
+        function joinP2PLobby() {
+            initAudio();
+            const inputCode = document.getElementById('joinRoomInput').value.trim().toUpperCase();
+            if (inputCode.length !== 6) {
+                showModal("INVALID CODE", "Please enter a valid 6-character room code.");
+                return;
+            }
+
+            gameState.playerName = getPlayerNameInput();
+            gameState.isMultiplayer = true;
+            gameState.isHost = false;
+            gameState.roomId = inputCode;
+
+            try {
+                gameState.peer = new Peer();
+            } catch (e) {
+                showModal("ERROR", "Could not initialize network.");
+                return;
+            }
+
+            gameState.peer.on('open', (id) => {
+                const hostPeerId = `MATH3D-${gameState.roomId}`;
+                const conn = gameState.peer.connect(hostPeerId);
+
+                conn.on('open', () => {
+                    gameState.connections['host'] = conn;
+                    conn.send({
+                        type: 'JOIN',
+                        name: gameState.playerName,
+                        color: gameState.playerColor
+                    });
+                });
+
+                conn.on('data', (data) => {
+                    handleClientPeerData(data);
+                });
+
+                conn.on('error', (err) => {
+                    showModal("CONNECTION FAILED", "Unable to connect to room code " + inputCode);
+                });
+            });
+
+            gameState.peer.on('error', (err) => {
+                showModal("ERROR", "Peer connection failed. Check your internet or room code.");
+            });
+        }
+
+        function setupHostPlayerState() {
+            gameState.players = [{
+                id: 'host',
+                name: gameState.playerName + " (Host)",
+                color: gameState.playerColor,
+                isAi: false,
+                progress: 0,
+                streak: 0,
+                totalCorrect: 0,
+                totalWrong: 0,
+                isFinished: false,
+                finishTime: 0
+            }];
+            updateLobbyUI();
+        }
+
+        function handlePeerData(connId, data) {
+            if (data.type === 'JOIN') {
+                const newPlayer = {
+                    id: connId,
+                    name: data.name,
+                    color: data.color,
+                    isAi: false,
+                    progress: 0,
+                    streak: 0,
+                    totalCorrect: 0,
+                    totalWrong: 0,
+                    isFinished: false,
+                    finishTime: 0
+                };
+                gameState.players.push(newPlayer);
+                updateLobbyUI();
+                broadcastLobbyState();
+            } else if (data.type === 'PROGRESS_UPDATE') {
+                const player = gameState.players.find(p => p.id === connId);
+                if (player) {
+                    player.progress = data.progress;
+                    player.streak = data.streak;
+                    player.totalCorrect = data.totalCorrect;
+                    player.totalWrong = data.totalWrong;
+                    if (data.isFinished) {
+                        player.isFinished = true;
+                        player.finishTime = data.finishTime;
+                    }
+                }
+                broadcastRaceState();
+                checkGameFinished();
+            }
+        }
+
+        function handleClientPeerData(data) {
+            if (data.type === 'LOBBY_STATE') {
+                gameState.players = data.players;
+                showLobbyScreen();
+                updateLobbyUI();
+            } else if (data.type === 'START_GAME') {
+                gameState.questions = data.questions;
+                gameState.difficulty = data.difficulty;
+                gameState.digits = data.digits;
+                gameState.players = data.players;
+                startRaceUI();
+            } else if (data.type === 'RACE_STATE') {
+                gameState.players = data.players;
+            } else if (data.type === 'GAME_OVER') {
+                gameState.players = data.players;
+                showResultsScreen();
+            } else if (data.type === 'FULL') {
+                showModal("ROOM FULL", "This race room is already full (max 4 players).");
+            }
+        }
+
+        function handlePeerDisconnect(connId) {
+            gameState.players = gameState.players.filter(p => p.id !== connId);
+            delete gameState.connections[connId];
+            if (gameState.isHost) {
+                updateLobbyUI();
+                broadcastLobbyState();
+            }
+        }
+
+        function broadcastLobbyState() {
+            if (!gameState.isHost) return;
+            const msg = {
+                type: 'LOBBY_STATE',
+                players: gameState.players
+            };
+            Object.values(gameState.connections).forEach(conn => conn.send(msg));
+        }
+
+        function broadcastRaceState() {
+            if (gameState.isHost) {
+                const msg = { type: 'RACE_STATE', players: gameState.players };
+                Object.values(gameState.connections).forEach(conn => conn.send(msg));
+            } else if (gameState.connections['host']) {
+                const myId = gameState.peer ? gameState.peer.id : 'client';
+                const me = gameState.players.find(p => p.id === myId || p.name === gameState.playerName);
+                if (me) {
+                    gameState.connections['host'].send({
+                        type: 'PROGRESS_UPDATE',
+                        progress: me.progress,
+                        streak: gameState.streak,
+                        totalCorrect: gameState.totalCorrect,
+                        totalWrong: gameState.totalWrong,
+                        isFinished: me.isFinished,
+                        finishTime: me.finishTime
+                    });
+                }
+            }
+        }
+
+        function copyRoomCode() {
+            if (!gameState.roomId) return;
+            document.execCommand('copy');
+            showModal("COPIED!", `Room code ${gameState.roomId} copied to clipboard! Share it with friends.`);
+        }
+
+        function leaveLobby() {
+            if (gameState.peer) {
+                gameState.peer.destroy();
+                gameState.peer = null;
+            }
+            document.getElementById('lobbyScreen').classList.add('hidden');
+            document.getElementById('homeScreen').classList.remove('hidden');
+        }
+
+        function updateLobbyUI() {
+            document.getElementById('roomCodeDisplay').innerText = gameState.roomId || '______';
+            document.getElementById('playerCountText').innerText = gameState.players.length;
+
+            const list = document.getElementById('lobbyPlayerList');
+            list.innerHTML = '';
+
+            gameState.players.forEach((p, idx) => {
+                const card = document.createElement('div');
+                card.className = "bg-purple-950 p-4 rounded-2xl border-2 border-purple-500/50 flex items-center justify-between";
+                card.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <div class="w-7 h-7 rounded-full border-2 border-white shadow" style="background-color: ${p.color}"></div>
+                        <span class="font-title text-base text-yellow-300">${p.name}</span>
+                    </div>
+                    <span class="font-title text-xs text-pink-400 bg-pink-950/60 px-2.5 py-1 rounded-lg border border-pink-500/50">${idx === 0 ? 'HOST' : 'READY'}</span>
+                `;
+                list.appendChild(card);
+            });
+
+            const startBtn = document.getElementById('startLobbyBtn');
+            if (gameState.isHost) {
+                startBtn.classList.remove('hidden');
+            } else {
+                startBtn.classList.add('hidden');
+            }
+        }
+
+        /* ==========================================================================
+           SINGLE PLAYER & AI BOT SIMULATION
+           ========================================================================== */
+        function startSinglePlayerGame() {
+            initAudio();
+            gameState.playerName = getPlayerNameInput();
+            gameState.isMultiplayer = false;
+            gameState.isHost = true;
+
+            gameState.questions = generateMathQuestions(gameState.difficulty, gameState.digits);
+
+            const botNames = ['Speedy Bot', 'Pixel Dash', 'Algo Turbo'];
+            const botColors = ['#ffe600', '#10b981', '#a855f7'];
+
+            gameState.players = [
+                {
+                    id: 'local',
+                    name: gameState.playerName,
+                    color: gameState.playerColor,
+                    isAi: false,
+                    progress: 0,
+                    streak: 0,
+                    totalCorrect: 0,
+                    totalWrong: 0,
+                    isFinished: false,
+                    finishTime: 0
+                }
+            ];
+
+            for (let i = 0; i < 3; i++) {
+                gameState.players.push({
+                    id: `bot-${i}`,
+                    name: botNames[i],
+                    color: botColors[i],
+                    isAi: true,
+                    progress: 0,
+                    streak: 0,
+                    totalCorrect: 0,
+                    totalWrong: 0,
+                    isFinished: false,
+                    finishTime: 0,
+                    botSpeed: 3000 + Math.random() * 2500
+                });
+            }
+
+            startRaceUI();
+            startBotAI();
+        }
+
+        function hostStartMultiplayerGame() {
+            if (!gameState.isHost) return;
+
+            gameState.questions = generateMathQuestions(gameState.difficulty, gameState.digits);
+
+            const msg = {
+                type: 'START_GAME',
+                questions: gameState.questions,
+                difficulty: gameState.difficulty,
+                digits: gameState.digits,
+                players: gameState.players
+            };
+
+            Object.values(gameState.connections).forEach(conn => conn.send(msg));
+            startRaceUI();
+        }
+
+        function startBotAI() {
+            gameState.players.forEach(p => {
+                if (p.isAi) {
+                    const aiLoop = setInterval(() => {
+                        if (p.isFinished || document.getElementById('gameScreen').classList.contains('hidden')) {
+                            clearInterval(aiLoop);
+                            return;
+                        }
+
+                        p.progress++;
+                        p.totalCorrect++;
+
+                        if (p.progress >= 10) {
+                            p.progress = 10;
+                            p.isFinished = true;
+                            p.finishTime = Date.now() - gameState.startTime;
+                            clearInterval(aiLoop);
+                            checkGameFinished();
+                        }
+
+                    }, p.botSpeed);
+                }
+            });
+        }
+
+        /* ==========================================================================
+           3D WEBGL RACE TRACK RENDERER (Three.js)
+           ========================================================================== */
+        let raceScene, raceCamera, raceRenderer;
+        let trackMesh, finishArchGroup;
+        let nitroParticles = [];
+
+        const TRACK_LENGTH = 120;
+        const LANE_X = [-4.5, -1.5, 1.5, 4.5]; // 4 3D track lanes
+
+        function init3DRaceScene() {
+            const container = document.getElementById('canvas3DContainer');
+            const canvas = document.getElementById('raceCanvas3D');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            raceScene = new THREE.Scene();
+            raceScene.background = new THREE.Color(0x38bdf8); // Sky blue
+            raceScene.fog = new THREE.FogExp2(0x38bdf8, 0.012);
+
+            raceCamera = new THREE.PerspectiveCamera(50, width / height, 0.1, 200);
+            // Position camera behind and above track looking forward
+            raceCamera.position.set(0, 12, 28);
+            raceCamera.lookAt(0, 0, -20);
+
+            raceRenderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+            raceRenderer.setSize(width, height);
+            raceRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+            // Lighting
+            const ambient = new THREE.AmbientLight(0xffffff, 0.7);
+            raceScene.add(ambient);
+
+            const sunLight = new THREE.DirectionalLight(0xfffaed, 0.9);
+            sunLight.position.set(20, 40, 20);
+            raceScene.add(sunLight);
+
+            // Ground & Road
+            build3DTrackEnvironment();
+
+            // Spawn 3D Karts for each racer
+            gameState.players.forEach((p, idx) => {
+                const kart = create3DKart(p.color);
+                kart.position.set(LANE_X[idx], 0, 10); // Start position
+                raceScene.add(kart);
+                p.mesh = kart;
+            });
+
+            // Handle Resize
+            window.addEventListener('resize', () => {
+                if (document.getElementById('gameScreen').classList.contains('hidden')) return;
+                const newW = container.clientWidth;
+                const newH = container.clientHeight;
+                raceCamera.aspect = newW / newH;
+                raceCamera.updateProjectionMatrix();
+                raceRenderer.setSize(newW, newH);
+            });
+
+            // Start 3D Loop
+            animate3DRace();
+        }
+
+        function build3DTrackEnvironment() {
+            // Main Road Surface
+            const roadGeo = new THREE.BoxGeometry(14, 0.2, TRACK_LENGTH + 40);
+            const roadMat = new THREE.MeshToonMaterial({ color: 0x222533 });
+            const road = new THREE.Mesh(roadGeo, roadMat);
+            road.position.set(0, -0.1, -TRACK_LENGTH / 2 + 10);
+            raceScene.add(road);
+
+            // Lane Dividers (Dashed glowing lines)
+            for (let l = 1; l < 4; l++) {
+                const lineX = LANE_X[l - 1] + 1.5;
+                for (let z = 15; z > -TRACK_LENGTH - 10; z -= 8) {
+                    const stripeGeo = new THREE.BoxGeometry(0.2, 0.22, 4);
+                    const stripeMat = new THREE.MeshBasicMaterial({ color: 0xffea00 });
+                    const stripe = new THREE.Mesh(stripeGeo, stripeMat);
+                    stripe.position.set(lineX, 0.02, z);
+                    raceScene.add(stripe);
+                }
+            }
+
+            // Rainbow Side Rails
+            [-7.2, 7.2].forEach(sideX => {
+                const railGeo = new THREE.BoxGeometry(0.4, 0.6, TRACK_LENGTH + 40);
+                const railMat = new THREE.MeshToonMaterial({ color: 0xff007f });
+                const rail = new THREE.Mesh(railGeo, railMat);
+                rail.position.set(sideX, 0.3, -TRACK_LENGTH / 2 + 10);
+                raceScene.add(rail);
+            });
+
+            // Finish Line Checkered Arch
+            finishArchGroup = new THREE.Group();
+            const pillarGeo = new THREE.CylinderGeometry(0.5, 0.5, 8, 16);
+            const pillarMat = new THREE.MeshToonMaterial({ color: 0xff2a85 });
+            
+            const pLeft = new THREE.Mesh(pillarGeo, pillarMat);
+            pLeft.position.set(-7.5, 4, -TRACK_LENGTH + 10);
+            const pRight = new THREE.Mesh(pillarGeo, pillarMat);
+            pRight.position.set(7.5, 4, -TRACK_LENGTH + 10);
+            
+            const topBarGeo = new THREE.BoxGeometry(16, 1.2, 1.2);
+            const topBarMat = new THREE.MeshToonMaterial({ color: 0xffea00 });
+            const topBar = new THREE.Mesh(topBarGeo, topBarMat);
+            topBar.position.set(0, 8, -TRACK_LENGTH + 10);
+
+            finishArchGroup.add(pLeft);
+            finishArchGroup.add(pRight);
+            finishArchGroup.add(topBar);
+            raceScene.add(finishArchGroup);
+
+            // Floating Scenery Elements (Stylized 3D Trees & Clouds)
+            for (let i = 0; i < 20; i++) {
+                // Trees on left/right sides
+                const treeGroup = new THREE.Group();
+                const trunkGeo = new THREE.CylinderGeometry(0.3, 0.4, 2, 8);
+                const trunkMat = new THREE.MeshToonMaterial({ color: 0x8b5a2b });
+                const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+                trunk.position.y = 1;
+
+                const foliageGeo = new THREE.ConeGeometry(1.8, 3.5, 8);
+                const foliageMat = new THREE.MeshToonMaterial({ color: 0x10b981 });
+                const foliage = new THREE.Mesh(foliageGeo, foliageMat);
+                foliage.position.y = 3;
+
+                treeGroup.add(trunk);
+                treeGroup.add(foliage);
+
+                const side = Math.random() > 0.5 ? 1 : -1;
+                treeGroup.position.set(side * (11 + Math.random() * 8), 0, -Math.random() * TRACK_LENGTH);
+                raceScene.add(treeGroup);
+            }
+        }
+
+        /* Particle Nitro Effect Generator */
+        function triggerNitroParticles(kartMesh) {
+            for (let i = 0; i < 15; i++) {
+                const particleGeo = new THREE.SphereGeometry(0.2, 8, 8);
+                const particleMat = new THREE.MeshBasicMaterial({
+                    color: Math.random() > 0.5 ? 0x00f0ff : 0xff0055,
+                    transparent: true,
+                    opacity: 0.9
+                });
+                const p = new THREE.Mesh(particleGeo, particleMat);
+                
+                // Spawn behind kart exhaust
+                p.position.set(
+                    kartMesh.position.x + (Math.random() - 0.5) * 0.5,
+                    kartMesh.position.y + 0.5,
+                    kartMesh.position.z + 1.2
+                );
+
+                raceScene.add(p);
+                nitroParticles.push({
+                    mesh: p,
+                    velocity: new THREE.Vector3((Math.random() - 0.5) * 0.1, Math.random() * 0.1, 0.3 + Math.random() * 0.2),
+                    life: 1.0
+                });
+            }
+        }
+
+        function animate3DRace() {
+            if (document.getElementById('gameScreen').classList.contains('hidden')) return;
+            requestAnimationFrame(animate3DRace);
+
+            // Smoothly glide 3D Karts to target position based on progress (0 -> 10 equations)
+            gameState.players.forEach(p => {
+                if (p.mesh) {
+                    // Map progress 0..10 to z coordinate: 10 down to -TRACK_LENGTH + 10
+                    const targetZ = 10 - (p.progress / 10) * TRACK_LENGTH;
+                    p.mesh.position.z += (targetZ - p.mesh.position.z) * 0.08;
+
+                    // Wheel spinning animation relative to kart speed
+                    p.mesh.userData.wheels.forEach(w => {
+                        w.rotation.x += 0.15;
+                    });
+                }
+            });
+
+            // Smooth camera positioning to follow local player
+            const myId = gameState.isMultiplayer ? (gameState.isHost ? 'host' : gameState.peer.id) : 'local';
+            const me = gameState.players.find(p => p.id === myId || p.name === gameState.playerName);
+            if (me && me.mesh) {
+                const targetCamZ = me.mesh.position.z + 18;
+                raceCamera.position.z += (targetCamZ - raceCamera.position.z) * 0.05;
+                raceCamera.lookAt(0, 2, me.mesh.position.z - 15);
+            }
+
+            // Animate exhaust nitro particles
+            for (let i = nitroParticles.length - 1; i >= 0; i--) {
+                const part = nitroParticles[i];
+                part.mesh.position.add(part.velocity);
+                part.life -= 0.04;
+                part.mesh.material.opacity = part.life;
+                part.mesh.scale.multiplyScalar(0.95);
+
+                if (part.life <= 0) {
+                    raceScene.remove(part.mesh);
+                    nitroParticles.splice(i, 1);
+                }
+            }
+
+            raceRenderer.render(raceScene, raceCamera);
+        }
+
+        /* ==========================================================================
+           RACE UI & GAMEPLAY LOGIC
+           ========================================================================== */
+        function showLobbyScreen() {
+            document.getElementById('homeScreen').classList.add('hidden');
+            document.getElementById('lobbyScreen').classList.remove('hidden');
+            document.getElementById('gameScreen').classList.add('hidden');
+            document.getElementById('resultsScreen').classList.add('hidden');
+        }
+
+        function startRaceUI() {
+            document.getElementById('homeScreen').classList.add('hidden');
+            document.getElementById('lobbyScreen').classList.add('hidden');
+            document.getElementById('gameScreen').classList.remove('hidden');
+            document.getElementById('resultsScreen').classList.add('hidden');
+
+            gameState.currentQIndex = 0;
+            gameState.userInput = "";
+            gameState.streak = 0;
+            gameState.totalCorrect = 0;
+            gameState.totalWrong = 0;
+            gameState.startTime = Date.now();
+
+            const myId = gameState.isMultiplayer ? (gameState.isHost ? 'host' : gameState.peer.id) : 'local';
+            const me = gameState.players.find(p => p.id === myId || p.name === gameState.playerName);
+            if (me) {
+                me.progress = 0;
+                me.isFinished = false;
+            }
+
+            displayCurrentQuestion();
+            startTimer();
+            init3DRaceScene();
+        }
+
+        function displayCurrentQuestion() {
+            if (gameState.currentQIndex >= 10) return;
+
+            const currentQ = gameState.questions[gameState.currentQIndex];
+            document.getElementById('qCounter').innerText = gameState.currentQIndex + 1;
+            document.getElementById('equationDisplay').innerText = `${currentQ.eq} = ?`;
+            document.getElementById('streakCounter').innerText = gameState.streak;
+
+            gameState.userInput = "";
+            updateAnswerInputText();
+        }
+
+        function pressKey(val) {
+            playRetroSound('key');
+            if (val === '-' && gameState.userInput.length > 0) return;
+            if (gameState.userInput.length < 6) {
+                gameState.userInput += val;
+                updateAnswerInputText();
+            }
+        }
+
+        function clearAnswer() {
+            playRetroSound('key');
+            gameState.userInput = "";
+            updateAnswerInputText();
+        }
+
+        function updateAnswerInputText() {
+            document.getElementById('answerInputText').innerText = gameState.userInput;
+        }
+
+        /* Keyboard Listener */
+        window.addEventListener('keydown', (e) => {
+            if (document.getElementById('gameScreen').classList.contains('hidden')) return;
+
+            if (e.key >= '0' && e.key <= '9') {
+                pressKey(e.key);
+            } else if (e.key === '-') {
+                pressKey('-');
+            } else if (e.key === 'Backspace') {
+                clearAnswer();
+            } else if (e.key === 'Enter') {
+                submitAnswer();
+            }
+        });
+
+        function submitAnswer() {
+            if (!gameState.userInput) return;
+
+            const userAns = parseInt(gameState.userInput, 10);
+            const currentQ = gameState.questions[gameState.currentQIndex];
+
+            if (userAns === currentQ.answer) {
+                playRetroSound('correct');
+                showFeedback("CORRECT! +NITRO BOOST 🚀", "#10b981");
+
+                gameState.streak++;
+                gameState.totalCorrect++;
+                gameState.currentQIndex++;
+
+                const myId = gameState.isMultiplayer ? (gameState.isHost ? 'host' : gameState.peer.id) : 'local';
+                const me = gameState.players.find(p => p.id === myId || p.name === gameState.playerName);
+
+                if (me) {
+                    me.progress = gameState.currentQIndex;
+                    if (me.mesh) {
+                        triggerNitroParticles(me.mesh);
+                    }
+                    if (me.progress >= 10) {
+                        me.isFinished = true;
+                        me.finishTime = Date.now() - gameState.startTime;
+                    }
+                }
+
+                if (gameState.isMultiplayer) {
+                    broadcastRaceState();
+                }
+
+                if (gameState.currentQIndex >= 10) {
+                    checkGameFinished();
+                } else {
+                    displayCurrentQuestion();
+                }
+
+            } else {
+                playRetroSound('wrong');
+                showFeedback("WRONG! SPIN OUT 🌀", "#ef4444");
+
+                const consoleElem = document.getElementById('mathConsole');
+                consoleElem.classList.add('shake');
+                setTimeout(() => consoleElem.classList.remove('shake'), 350);
+
+                gameState.streak = 0;
+                gameState.totalWrong++;
+                document.getElementById('streakCounter').innerText = 0;
+
+                gameState.userInput = "";
+                updateAnswerInputText();
+            }
+        }
+
+        function showFeedback(text, color) {
+            const banner = document.getElementById('feedbackBanner');
+            banner.innerText = text;
+            banner.style.color = color;
+            banner.style.opacity = '1';
+            setTimeout(() => {
+                banner.style.opacity = '0';
+            }, 800);
+        }
+
+        function startTimer() {
+            clearInterval(gameState.timerInterval);
+            gameState.timerInterval = setInterval(() => {
+                const elapsedSec = Math.floor((Date.now() - gameState.startTime) / 1000);
+                const mins = String(Math.floor(elapsedSec / 60)).padStart(2, '0');
+                const secs = String(elapsedSec % 60).padStart(2, '0');
+                document.getElementById('gameTimer').innerText = `${mins}:${secs}`;
+            }, 1000);
+        }
+
+        /* ==========================================================================
+           GAME OVER & RESULTS SCREEN
+           ========================================================================== */
+        function checkGameFinished() {
+            const myId = gameState.isMultiplayer ? (gameState.isHost ? 'host' : gameState.peer.id) : 'local';
+            const me = gameState.players.find(p => p.id === myId || p.name === gameState.playerName);
+
+            if (me && me.isFinished) {
+                setTimeout(() => {
+                    if (gameState.isHost) {
+                        broadcastRaceState();
+                        if (gameState.isMultiplayer) {
+                            Object.values(gameState.connections).forEach(c => c.send({
+                                type: 'GAME_OVER',
+                                players: gameState.players
+                            }));
+                        }
+                    }
+                    showResultsScreen();
+                }, 500);
+            }
+        }
+
+        function showResultsScreen() {
+            clearInterval(gameState.timerInterval);
+            playRetroSound('win');
+
+            document.getElementById('gameScreen').classList.add('hidden');
+            document.getElementById('resultsScreen').classList.remove('hidden');
+
+            const standings = [...gameState.players].sort((a, b) => {
+                if (b.progress !== a.progress) return b.progress - a.progress;
+                return a.finishTime - b.finishTime;
+            });
+
+            const winner = standings[0];
+            document.getElementById('winnerSubtitle').innerText = `${winner.name} WINS THE 3D TROPHY! 🏆`;
+
+            const standingsContainer = document.getElementById('standingsContainer');
+            standingsContainer.innerHTML = '';
+
+            standings.forEach((p, idx) => {
+                const row = document.createElement('div');
+                row.className = "flex justify-between items-center bg-purple-900/80 p-3.5 rounded-xl border border-purple-400 font-title text-base";
+                
+                const timeSec = p.finishTime ? (p.finishTime / 1000).toFixed(1) + 's' : 'DNF';
+                
+                row.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <span class="${idx === 0 ? 'text-yellow-300 text-lg' : 'text-purple-300'}">#${idx + 1}</span>
+                        <div class="w-5 h-5 rounded-full border-2 border-white shadow" style="background-color: ${p.color}"></div>
+                        <span class="text-white">${p.name}</span>
+                    </div>
+                    <span class="text-pink-400 font-bold">${timeSec}</span>
+                `;
+                standingsContainer.appendChild(row);
+            });
+
+            const totalAttempts = gameState.totalCorrect + gameState.totalWrong;
+            const accuracy = totalAttempts > 0 ? Math.round((gameState.totalCorrect / totalAttempts) * 100) : 100;
+            const elapsedSec = Math.floor((Date.now() - gameState.startTime) / 1000);
+            const mins = String(Math.floor(elapsedSec / 60)).padStart(2, '0');
+            const secs = String(elapsedSec % 60).padStart(2, '0');
+
+            document.getElementById('statTime').innerText = `${mins}:${secs}`;
+            document.getElementById('statAccuracy').innerText = `${accuracy}%`;
+            document.getElementById('statStreak').innerText = gameState.streak;
+        }
+
+        function returnToHome() {
+            if (gameState.peer) {
+                gameState.peer.destroy();
+                gameState.peer = null;
+            }
+            document.getElementById('resultsScreen').classList.add('hidden');
+            document.getElementById('homeScreen').classList.remove('hidden');
+            init3DPreview();
+        }
+
+        window.onload = function () {
+            init3DPreview();
+        };
+    </script>
+</body>
+</html>
