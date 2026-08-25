@@ -927,10 +927,11 @@
                 showLobbyScreen();
                 updateLobbyUI();
             } else if (data.type === 'START_GAME') {
-                gameState.questions = data.questions;
                 gameState.difficulty = data.difficulty;
                 gameState.digits = data.digits;
                 gameState.players = data.players;
+                // Generate unique math questions independently for this player
+                gameState.questions = generateMathQuestions(data.difficulty, data.digits);
                 startRaceUI();
             } else if (data.type === 'RACE_STATE') {
                 gameState.players = data.players;
@@ -951,6 +952,17 @@
             }
         }
 
+        function getLocalPlayer() {
+            if (!gameState.isMultiplayer) {
+                return gameState.players.find(p => p.id === 'local') || gameState.players[0];
+            }
+            if (gameState.isHost) {
+                return gameState.players.find(p => p.id === 'host') || gameState.players[0];
+            }
+            const myId = gameState.peer ? gameState.peer.id : null;
+            return gameState.players.find(p => p.id === myId) || gameState.players.find(p => p.name === gameState.playerName) || gameState.players[0];
+        }
+
         function broadcastLobbyState() {
             if (!gameState.isHost) return;
             const msg = {
@@ -965,8 +977,7 @@
                 const msg = { type: 'RACE_STATE', players: gameState.players };
                 Object.values(gameState.connections).forEach(conn => conn.send(msg));
             } else if (gameState.connections['host']) {
-                const myId = gameState.peer ? gameState.peer.id : 'client';
-                const me = gameState.players.find(p => p.id === myId || p.name === gameState.playerName);
+                const me = getLocalPlayer();
                 if (me) {
                     gameState.connections['host'].send({
                         type: 'PROGRESS_UPDATE',
@@ -1080,7 +1091,6 @@
 
             const msg = {
                 type: 'START_GAME',
-                questions: gameState.questions,
                 difficulty: gameState.difficulty,
                 digits: gameState.digits,
                 players: gameState.players
@@ -1415,8 +1425,7 @@
                 gameState.totalCorrect++;
                 gameState.currentQIndex++;
 
-                const myId = gameState.isMultiplayer ? (gameState.isHost ? 'host' : gameState.peer.id) : 'local';
-                const me = gameState.players.find(p => p.id === myId || p.name === gameState.playerName);
+                const me = getLocalPlayer();
 
                 if (me) {
                     me.progress = gameState.currentQIndex;
@@ -1480,8 +1489,7 @@
            GAME OVER & RESULTS SCREEN
            ========================================================================== */
         function checkGameFinished() {
-            const myId = gameState.isMultiplayer ? (gameState.isHost ? 'host' : gameState.peer.id) : 'local';
-            const me = gameState.players.find(p => p.id === myId || p.name === gameState.playerName);
+            const me = getLocalPlayer();
 
             if (me && me.isFinished) {
                 setTimeout(() => {
