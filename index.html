@@ -6,1465 +6,1415 @@
     <title>Super 3D Math Racers</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Kid-Friendly Google Fonts -->
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Luckiest+Guy&display=swap" rel="stylesheet">
-    <!-- Three.js 3D Engine -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- PeerJS for P2P Multiplayer -->
-    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+    <!-- Three.js 3D Engine -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- PeerJS P2P Networking -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
     <style>
         body {
             font-family: 'Fredoka', sans-serif;
-            background: linear-gradient(135deg, #1a0b36 0%, #2b1055 50%, #4a154b 100%);
-            color: #ffffff;
             user-select: none;
             overflow-x: hidden;
+            background-color: #0f172a;
         }
-
         .font-title {
             font-family: 'Luckiest Guy', cursive;
-            letter-spacing: 1.5px;
+            letter-spacing: 1px;
         }
-
-        /* Kid-Friendly Toy Button Styling */
-        .toy-btn {
-            position: relative;
-            transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 8px 0 rgba(0, 0, 0, 0.35);
-        }
-        .toy-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 0 rgba(0, 0, 0, 0.35);
-        }
-        .toy-btn:active {
-            transform: translateY(6px);
-            box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
-        }
-
-        /* Glow & Card Effects */
         .glass-panel {
-            background: rgba(23, 15, 48, 0.85);
+            background: rgba(15, 23, 42, 0.75);
             backdrop-filter: blur(12px);
-            border: 4px solid rgba(255, 255, 255, 0.15);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), inset 0 2px 0 rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.15);
         }
-
-        /* Screen Shake Effect */
-        @keyframes shake {
-            0% { transform: translate(1px, 1px) rotate(0deg); }
-            20% { transform: translate(-4px, 0px) rotate(-1deg); }
-            40% { transform: translate(4px, -1px) rotate(1deg); }
-            60% { transform: translate(-4px, 1px) rotate(0deg); }
-            80% { transform: translate(4px, 1px) rotate(1deg); }
-            100% { transform: translate(1px, -2px) rotate(0deg); }
+        .btn-bounce {
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+        }
+        .btn-bounce:hover {
+            transform: translateY(-2px) scale(1.02);
+        }
+        .btn-bounce:active {
+            transform: translateY(1px) scale(0.98);
         }
         .shake {
-            animation: shake 0.35s ease-in-out;
+            animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
         }
-
-        /* Bouncy Pulse Animation */
-        @keyframes bounce-gentle {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-8px); }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-2px, 0, 0); }
+            20%, 80% { transform: translate3d(4px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
+            40%, 60% { transform: translate3d(6px, 0, 0); }
         }
-        .animate-bounce-gentle {
-            animation: bounce-gentle 2s infinite ease-in-out;
+        .pulse-nitro {
+            animation: pulseNitro 0.6s ease-out infinite alternate;
         }
-
-        /* Custom Scrollbars */
-        ::-webkit-scrollbar {
-            width: 8px;
+        @keyframes pulseNitro {
+            from { box-shadow: 0 0 10px #3b82f6, 0 0 20px #60a5fa; }
+            to { box-shadow: 0 0 25px #3b82f6, 0 0 45px #93c5fd; }
         }
-        ::-webkit-scrollbar-track {
-            background: #100624;
+        
+        .keypad-btn {
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
-        ::-webkit-scrollbar-thumb {
-            background: #ff2a85;
-            border-radius: 999px;
+        .keypad-btn:active, .keypad-active {
+            transform: translateY(2px) scale(0.96) !important;
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.6) !important;
+            background-color: #f59e0b !important;
+            color: #0f172a !important;
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between relative">
+<body class="text-white min-h-screen flex flex-col justify-between">
 
-    <!-- TOP NAVIGATION HEADER -->
-    <header class="p-3 sm:p-4 bg-slate-950/70 border-b-4 border-yellow-400 flex justify-between items-center z-30 relative backdrop-blur-md">
-        <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 rounded-full bg-yellow-400 flex items-center justify-center text-purple-900 text-2xl font-black shadow-lg animate-bounce-gentle">
-                <i class="fa-solid fa-flag-checkered"></i>
+    <header class="fixed top-0 left-0 w-full z-40 p-4 flex justify-between items-center pointer-events-none">
+        <div class="flex items-center space-x-3 pointer-events-auto">
+            <div class="bg-amber-400 text-slate-950 font-title px-4 py-2 rounded-2xl shadow-lg text-xl flex items-center gap-2 border-2 border-amber-200">
+                <i class="fa-solid fa-flag-checkered text-slate-900"></i> SUPER 3D MATH RACERS
             </div>
-            <h1 class="font-title text-xl sm:text-3xl text-yellow-300 drop-shadow-[0_4px_0_rgba(0,0,0,0.8)] tracking-wide">
-                SUPER <span class="text-pink-500">3D</span> MATH RACERS
-            </h1>
         </div>
-        
-        <div class="flex items-center space-x-3">
-            <button id="soundToggle" onclick="toggleAudio()" class="w-11 h-11 rounded-2xl bg-purple-700 border-2 border-purple-400 hover:bg-purple-600 transition flex items-center justify-center text-yellow-300 text-xl shadow-md" title="Toggle Sound">
-                <i id="soundIcon" class="fa-solid fa-volume-high"></i>
-            </button>
-        </div>
+        <button id="soundToggle" onclick="toggleAudio()" class="pointer-events-auto bg-slate-800/80 hover:bg-slate-700 text-amber-400 p-3 rounded-2xl border border-slate-600 transition shadow-lg">
+            <i id="soundIcon" class="fa-solid fa-volume-high text-xl"></i>
+        </button>
     </header>
 
-    <!-- CUSTOM MODAL DIALOG (No alert!) -->
-    <div id="customModal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="glass-panel rounded-3xl p-6 sm:p-8 max-w-md w-full text-center space-y-5 border-4 border-yellow-400">
-            <div class="w-16 h-16 rounded-full bg-yellow-400 text-purple-900 mx-auto flex items-center justify-center text-3xl font-black shadow-lg">
-                <i class="fa-solid fa-circle-exclamation"></i>
-            </div>
-            <h3 id="modalTitle" class="font-title text-yellow-300 text-2xl">ATTENTION</h3>
-            <p id="modalMessage" class="text-xl text-purple-100 font-bold">Message content here</p>
-            <button onclick="closeModal()" class="toy-btn bg-pink-500 hover:bg-pink-400 text-white font-title py-3 px-8 rounded-2xl text-lg uppercase w-full">
-                OK, GOT IT!
-            </button>
-        </div>
-    </div>
-
-    <!-- MAIN INTERACTIVE CONTAINER -->
-    <main class="flex-grow flex flex-col items-center justify-center p-2 sm:p-6 z-20">
-
-        <!-- SCREEN 1: HOME SETUP SCREEN -->
-        <section id="homeScreen" class="w-full max-w-4xl glass-panel rounded-3xl p-4 sm:p-8 space-y-6">
-            <div class="text-center space-y-2">
-                <h2 class="font-title text-2xl sm:text-4xl text-yellow-300 drop-shadow-[0_4px_0_rgba(0,0,0,0.8)]">READY, SET, SOLVE! 🏎️💨</h2>
-                <p class="text-lg sm:text-xl text-purple-200 font-semibold">Answer 10 math equations to zoom past the 3D finish line!</p>
+    <main class="flex-grow flex items-center justify-center p-4 relative z-10 pt-16">
+        
+        <!-- HOME / SETUP SCREEN -->
+        <div id="homeScreen" class="w-full max-w-4xl glass-panel rounded-3xl p-6 md:p-8 shadow-2xl relative">
+            <div class="text-center mb-6">
+                <h1 class="text-4xl md:text-6xl font-title text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-red-500 drop-shadow-md">
+                    READY, SET, MATH!
+                </h1>
+                <p class="text-slate-300 text-sm md:text-base mt-1">Solve math equations to accelerate your 3D Super Kart to the finish line!</p>
             </div>
 
-            <!-- Player Configuration & 3D Kart Preview -->
-            <div class="grid grid-cols-1 md:grid-cols-12 gap-6 bg-slate-900/80 p-5 rounded-2xl border-2 border-purple-500/40">
-                <!-- Inputs & Pickers -->
-                <div class="md:col-span-7 space-y-4">
-                    <div>
-                        <label class="block font-title text-sm text-yellow-300 mb-2">RACER NAME:</label>
-                        <input type="text" id="playerNameInput" maxlength="12" value="Turbo Kid" 
-                            class="w-full bg-purple-950 text-yellow-300 border-4 border-yellow-400 rounded-2xl p-3 text-2xl focus:outline-none focus:border-pink-500 font-bold text-center tracking-wide shadow-inner">
-                    </div>
-
-                    <div>
-                        <label class="block font-title text-sm text-yellow-300 mb-2">KART COLOR:</label>
-                        <div class="flex space-x-3 pt-1" id="colorPicker">
-                            <button onclick="selectCarColor('#ff0055')" class="w-12 h-12 rounded-2xl bg-pink-500 border-4 border-white shadow-lg transition transform hover:scale-110 color-btn ring-4 ring-yellow-400" data-color="#ff0055"></button>
-                            <button onclick="selectCarColor('#00f0ff')" class="w-12 h-12 rounded-2xl bg-cyan-400 border-4 border-white shadow-lg transition transform hover:scale-110 color-btn" data-color="#00f0ff"></button>
-                            <button onclick="selectCarColor('#ffe600')" class="w-12 h-12 rounded-2xl bg-yellow-400 border-4 border-white shadow-lg transition transform hover:scale-110 color-btn" data-color="#ffe600"></button>
-                            <button onclick="selectCarColor('#10b981')" class="w-12 h-12 rounded-2xl bg-emerald-400 border-4 border-white shadow-lg transition transform hover:scale-110 color-btn" data-color="#10b981"></button>
-                            <button onclick="selectCarColor('#a855f7')" class="w-12 h-12 rounded-2xl bg-purple-500 border-4 border-white shadow-lg transition transform hover:scale-110 color-btn" data-color="#a855f7"></button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Live 3D Preview Canvas -->
-                <div class="md:col-span-5 flex flex-col items-center justify-center bg-purple-950/60 rounded-2xl border-2 border-purple-400 p-2 relative overflow-hidden h-48 md:h-auto">
-                    <span class="absolute top-2 left-3 font-title text-xs text-yellow-300 bg-purple-900/80 px-2 py-1 rounded-lg border border-yellow-400/50">3D KART PREVIEW</span>
-                    <canvas id="previewCanvas" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
-                </div>
-            </div>
-
-            <!-- Difficulty & Digits Selection -->
-            <div class="space-y-4">
-                <div>
-                    <label class="block font-title text-sm text-yellow-300 mb-2">DIFFICULTY LEVEL:</label>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <button onclick="setDifficulty('beginner')" id="diff-beginner" class="diff-btn toy-btn p-4 rounded-2xl border-4 border-pink-500 bg-pink-600/40 text-left transition">
-                            <div class="font-title text-base text-yellow-300">BEGINNER</div>
-                            <div class="text-sm text-purple-200 font-bold">Lower Primary</div>
-                            <div class="text-xs text-pink-300 font-extrabold mt-1">( + , - )</div>
-                        </button>
-                        <button onclick="setDifficulty('intermediate')" id="diff-intermediate" class="diff-btn toy-btn p-4 rounded-2xl border-4 border-purple-700 bg-purple-950/60 text-left transition">
-                            <div class="font-title text-base text-cyan-300">INTERMEDIATE</div>
-                            <div class="text-sm text-purple-200 font-bold">Higher Primary</div>
-                            <div class="text-xs text-cyan-300 font-extrabold mt-1">( + , - , × , ÷ )</div>
-                        </button>
-                        <button onclick="setDifficulty('advanced')" id="diff-advanced" class="diff-btn toy-btn p-4 rounded-2xl border-4 border-purple-700 bg-purple-950/60 text-left transition">
-                            <div class="font-title text-base text-emerald-300">ADVANCED</div>
-                            <div class="text-sm text-purple-200 font-bold">Lower Secondary</div>
-                            <div class="text-xs text-emerald-300 font-extrabold mt-1">(Signed, Order, x)</div>
-                        </button>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block font-title text-sm text-yellow-300 mb-2">NUMBER OF DIGITS:</label>
-                    <div class="grid grid-cols-3 gap-3">
-                        <button onclick="setDigits(1)" id="digit-1" class="digit-btn toy-btn py-3 px-4 rounded-2xl border-4 border-pink-500 bg-pink-600/40 text-center font-title text-lg">1 DIGIT</button>
-                        <button onclick="setDigits(2)" id="digit-2" class="digit-btn toy-btn py-3 px-4 rounded-2xl border-4 border-purple-700 bg-purple-950/60 text-center font-title text-lg">2 DIGITS</button>
-                        <button onclick="setDigits(3)" id="digit-3" class="digit-btn toy-btn py-3 px-4 rounded-2xl border-4 border-purple-700 bg-purple-950/60 text-center font-title text-lg">3 DIGITS</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Single Player & P2P Switcher -->
-            <div class="border-t-2 border-purple-600/40 pt-5">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <!-- Single Player Vs Bots -->
-                    <div class="bg-purple-950/80 p-5 rounded-2xl border-2 border-cyan-400 flex flex-col justify-between space-y-4">
-                        <div>
-                            <h3 class="font-title text-lg text-cyan-300"><i class="fa-solid fa-robot mr-2"></i>SOLO VS BOTS</h3>
-                            <p class="text-sm text-purple-200 font-medium mt-1">Race against 3 AI Bot drivers in 3D!</p>
-                        </div>
-                        <button onclick="startSinglePlayerGame()" class="toy-btn w-full bg-cyan-400 hover:bg-cyan-300 text-purple-950 font-title py-4 rounded-2xl text-lg uppercase tracking-wide">
-                            PLAY SOLO
-                        </button>
-                    </div>
-
-                    <!-- PeerJS Multiplayer -->
-                    <div class="bg-purple-950/80 p-5 rounded-2xl border-2 border-pink-500 flex flex-col justify-between space-y-4">
-                        <div>
-                            <h3 class="font-title text-lg text-pink-400"><i class="fa-solid fa-users mr-2"></i>P2P MULTIPLAYER</h3>
-                            <p class="text-sm text-purple-200 font-medium mt-1">Host a 3D race room or join friends!</p>
-                        </div>
-                        <div class="flex space-x-3">
-                            <button onclick="createP2PLobby()" class="toy-btn flex-1 bg-pink-500 hover:bg-pink-400 text-white font-title py-4 rounded-2xl text-base uppercase">
-                                HOST
-                            </button>
-                            <button onclick="showJoinInput()" class="toy-btn flex-1 bg-yellow-400 hover:bg-yellow-300 text-purple-950 font-title py-4 rounded-2xl text-base uppercase">
-                                JOIN
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Join Code Input Drawer -->
-                <div id="joinCodeDrawer" class="hidden mt-4 bg-purple-950 p-4 rounded-2xl border-2 border-yellow-400 flex flex-col sm:flex-row items-center gap-3">
-                    <input type="text" id="joinRoomInput" placeholder="ENTER 6-CHAR CODE" class="uppercase text-center font-title bg-slate-900 border-2 border-yellow-400 rounded-xl p-3 text-lg text-yellow-300 w-full focus:outline-none">
-                    <button onclick="joinP2PLobby()" class="toy-btn bg-yellow-400 hover:bg-yellow-300 text-purple-950 font-title py-3 px-8 rounded-xl text-base w-full sm:w-auto whitespace-nowrap">
-                        CONNECT
-                    </button>
-                </div>
-            </div>
-        </section>
-
-        <!-- SCREEN 2: MULTIPLAYER LOBBY SCREEN -->
-        <section id="lobbyScreen" class="hidden w-full max-w-2xl glass-panel rounded-3xl p-6 sm:p-8 space-y-6">
-            <div class="text-center space-y-3">
-                <span class="bg-pink-500/30 border border-pink-400 text-pink-300 px-4 py-1.5 rounded-full font-title text-sm">P2P 3D RACE LOBBY</span>
-                <h2 class="font-title text-3xl text-yellow-300">WAITING FOR RACERS...</h2>
-                
-                <div class="bg-purple-950/90 p-4 rounded-2xl border-4 border-yellow-400 inline-block mt-2">
-                    <div class="text-xs text-purple-300 font-title mb-1">ROOM CODE:</div>
-                    <div class="flex items-center justify-center space-x-3">
-                        <span id="roomCodeDisplay" class="font-title text-3xl sm:text-4xl text-cyan-300 tracking-widest">______</span>
-                        <button onclick="copyRoomCode()" class="w-10 h-10 rounded-xl bg-pink-500 hover:bg-pink-400 text-white text-lg flex items-center justify-center transition shadow" title="Copy Room Code">
-                            <i class="fa-solid fa-copy"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Connected Racers List -->
-            <div class="space-y-3">
-                <h3 class="font-title text-sm text-cyan-300">RACERS IN LOBBY (<span id="playerCountText">1</span>/4):</h3>
-                <div id="lobbyPlayerList" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <!-- Cards injected dynamically -->
-                </div>
-            </div>
-
-            <div class="flex space-x-4 pt-2">
-                <button onclick="leaveLobby()" class="toy-btn flex-1 bg-gray-700 hover:bg-gray-600 text-white font-title py-4 rounded-2xl text-base">
-                    LEAVE
-                </button>
-                <button id="startLobbyBtn" onclick="hostStartMultiplayerGame()" class="toy-btn flex-1 bg-emerald-400 hover:bg-emerald-300 text-purple-950 font-title py-4 rounded-2xl text-lg uppercase">
-                    START 3D RACE!
-                </button>
-            </div>
-        </section>
-
-        <!-- SCREEN 3: 3D RACE & MATH HUD SCREEN -->
-        <section id="gameScreen" class="hidden w-full max-w-5xl space-y-4">
-            
-            <!-- 3D RACE CANVAS DISPLAY -->
-            <div class="relative bg-purple-950/90 rounded-3xl border-4 border-cyan-400 overflow-hidden shadow-2xl p-2 sm:p-3">
-                
-                <!-- HUD Overlay Top Bar -->
-                <div class="flex justify-between items-center mb-2 font-title text-sm sm:text-base px-3 bg-purple-900/80 rounded-2xl p-2 border border-purple-400">
-                    <div class="text-pink-400">LAP: <span id="qCounter" class="text-yellow-300 text-xl">1</span>/10</div>
-                    <div class="text-cyan-300"><i class="fa-solid fa-stopwatch mr-2"></i><span id="gameTimer" class="text-xl">00:00</span></div>
-                    <div class="text-emerald-400">STREAK: <span id="streakCounter" class="text-yellow-300 text-xl">0</span> 🔥</div>
-                </div>
-
-                <!-- 3D WebGL Canvas Container -->
-                <div id="canvas3DContainer" class="relative w-full h-64 sm:h-80 md:h-96 rounded-2xl overflow-hidden border-2 border-purple-500/50 bg-sky-900">
-                    <canvas id="raceCanvas3D" class="w-full h-full block"></canvas>
-                </div>
-            </div>
-
-            <!-- MATH CONSOLE / INPUT PAD -->
-            <div id="mathConsole" class="glass-panel rounded-3xl p-4 sm:p-6 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                
-                <!-- Equation Display Area -->
-                <div class="md:col-span-7 bg-purple-950/90 rounded-2xl p-5 border-4 border-pink-500 flex flex-col justify-center items-center relative min-h-[160px] shadow-inner">
-                    <div id="feedbackBanner" class="absolute top-2 font-title text-sm text-emerald-400 opacity-0 transition-opacity">CORRECT! +NITRO BOOST 🚀</div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Left Column: Player Setup & 3D Preview -->
+                <div class="flex flex-col items-center bg-slate-900/60 p-5 rounded-2xl border border-slate-700">
+                    <h2 class="text-xl font-bold text-amber-300 mb-3"><i class="fa-solid fa-id-card"></i> RACER PROFILE</h2>
                     
-                    <div id="equationDisplay" class="font-title text-3xl sm:text-5xl text-yellow-300 my-2 tracking-wider text-center drop-shadow-[0_4px_0_rgba(0,0,0,0.8)]">
-                        12 + 15 = ?
+                    <div class="w-full mb-4">
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Racer Name</label>
+                        <input type="text" id="playerName" value="Speedy Math" maxlength="12" class="w-full bg-slate-800 border-2 border-slate-600 rounded-xl px-4 py-2 text-white font-bold focus:outline-none focus:border-amber-400 text-center">
                     </div>
 
-                    <!-- Answer Field & Clear -->
-                    <div class="flex items-center space-x-3 mt-3 w-full max-w-xs">
-                        <div id="answerBox" class="flex-grow bg-slate-950 border-4 border-cyan-400 rounded-2xl p-2.5 text-center font-title text-3xl text-white min-h-[56px] flex items-center justify-center tracking-widest shadow-inner">
-                            <span id="answerInputText" class="text-cyan-300"></span>
-                            <span class="animate-pulse text-pink-500 font-bold">|</span>
+                    <!-- 3D Mini Kart Preview Canvas -->
+                    <div class="relative w-full h-44 bg-slate-950/80 rounded-xl border border-slate-800 overflow-hidden mb-4 flex items-center justify-center">
+                        <canvas id="previewCanvas" class="w-full h-full"></canvas>
+                        <span class="absolute bottom-2 text-xs text-slate-400 bg-slate-900/80 px-2 py-0.5 rounded-full">Drag to rotate 3D Kart</span>
+                    </div>
+
+                    <!-- Color Picker Palette -->
+                    <div class="w-full">
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 text-center">Choose Kart Color</label>
+                        <div class="flex justify-center gap-3" id="colorPicker">
+                            <button onclick="setKartColor('#ff0055')" class="w-8 h-8 rounded-full bg-[#ff0055] border-2 border-white/80 transition transform hover:scale-110 shadow-md"></button>
+                            <button onclick="setKartColor('#3b82f6')" class="w-8 h-8 rounded-full bg-[#3b82f6] border-2 border-white/80 transition transform hover:scale-110 shadow-md"></button>
+                            <button onclick="setKartColor('#10b981')" class="w-8 h-8 rounded-full bg-[#10b981] border-2 border-white/80 transition transform hover:scale-110 shadow-md"></button>
+                            <button onclick="setKartColor('#f59e0b')" class="w-8 h-8 rounded-full bg-[#f59e0b] border-2 border-white/80 transition transform hover:scale-110 shadow-md"></button>
+                            <button onclick="setKartColor('#8b5cf6')" class="w-8 h-8 rounded-full bg-[#8b5cf6] border-2 border-white/80 transition transform hover:scale-110 shadow-md"></button>
                         </div>
-                        <button onclick="clearAnswer()" class="toy-btn bg-red-500 hover:bg-red-400 text-white font-title p-3.5 rounded-2xl text-base" title="Clear">
-                            <i class="fa-solid fa-backspace"></i>
+                    </div>
+                </div>
+
+                <!-- Right Column: Game Mode & Difficulty Settings -->
+                <div class="flex flex-col justify-between space-y-4">
+                    <!-- Difficulty Selection -->
+                    <div class="bg-slate-900/60 p-4 rounded-2xl border border-slate-700">
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2"><i class="fa-solid fa-graduation-cap text-amber-400"></i> Math Difficulty</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button onclick="setDifficulty('beginner')" id="btnDiffBeginner" class="diff-btn py-2 px-3 rounded-xl border text-xs md:text-sm font-bold bg-amber-500 text-slate-950 border-amber-300 shadow">
+                                Beginner<br><span class="text-[10px] opacity-80 font-normal">+, -</span>
+                            </button>
+                            <button onclick="setDifficulty('intermediate')" id="btnDiffInter" class="diff-btn py-2 px-3 rounded-xl border text-xs md:text-sm font-bold bg-slate-800 text-slate-300 border-slate-600 hover:bg-slate-700">
+                                Intermediate<br><span class="text-[10px] opacity-80 font-normal">+, -, ×, ÷</span>
+                            </button>
+                            <button onclick="setDifficulty('advanced')" id="btnDiffAdv" class="diff-btn py-2 px-3 rounded-xl border text-xs md:text-sm font-bold bg-slate-800 text-slate-300 border-slate-600 hover:bg-slate-700">
+                                Advanced<br><span class="text-[10px] opacity-80 font-normal">Sec 1 Level</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Digit Length Selection -->
+                    <div class="bg-slate-900/60 p-4 rounded-2xl border border-slate-700">
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2"><i class="fa-solid fa-hashtag text-amber-400"></i> Number Digits</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button onclick="setDigits(1)" id="btnDigit1" class="digit-btn py-2 px-3 rounded-xl border text-sm font-bold bg-amber-500 text-slate-950 border-amber-300 shadow">1 Digit</button>
+                            <button onclick="setDigits(2)" id="btnDigit2" class="digit-btn py-2 px-3 rounded-xl border text-sm font-bold bg-slate-800 text-slate-300 border-slate-600 hover:bg-slate-700">2 Digits</button>
+                            <button onclick="setDigits(3)" id="btnDigit3" class="digit-btn py-2 px-3 rounded-xl border text-sm font-bold bg-slate-800 text-slate-300 border-slate-600 hover:bg-slate-700">3 Digits</button>
+                        </div>
+                    </div>
+
+                    <!-- Play Options -->
+                    <div class="space-y-3 pt-2">
+                        <button onclick="startSinglePlayerGame()" class="w-full btn-bounce bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-title text-xl py-3.5 rounded-2xl shadow-lg border-b-4 border-emerald-700 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-robot"></i> SOLO RACE (VS AI BOTS)
+                        </button>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="hostMultiplayerLobby()" class="btn-bounce bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-title text-lg py-3 rounded-2xl shadow-lg border-b-4 border-orange-700 flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-house-laptop"></i> CREATE ROOM
+                            </button>
+                            <button onclick="openJoinModal()" class="btn-bounce bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white font-title text-lg py-3 rounded-2xl shadow-lg border-b-4 border-indigo-700 flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-users"></i> JOIN ROOM
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- JOIN LOBBY MODAL -->
+        <div id="joinModal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div class="w-full max-w-md bg-slate-900 border-2 border-slate-700 rounded-3xl p-6 shadow-2xl relative">
+                <button onclick="closeJoinModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-2xl"></i></button>
+                <h2 class="text-2xl font-title text-amber-400 mb-4 text-center"><i class="fa-solid fa-key"></i> ENTER ROOM CODE</h2>
+                <input type="text" id="joinRoomCode" placeholder="Paste Room Code..." class="w-full bg-slate-800 border-2 border-slate-600 rounded-xl px-4 py-3 text-white text-center font-bold text-lg focus:outline-none focus:border-blue-400 mb-4 uppercase">
+                <button onclick="joinMultiplayerLobby()" class="w-full btn-bounce bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-title text-xl py-3 rounded-2xl shadow-lg">CONNECT & JOIN</button>
+            </div>
+        </div>
+
+        <!-- MULTIPLAYER LOBBY SCREEN -->
+        <div id="lobbyScreen" class="hidden w-full max-w-2xl glass-panel rounded-3xl p-6 md:p-8 shadow-2xl">
+            <div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-700">
+                <div>
+                    <h2 class="text-3xl font-title text-amber-400">MULTIPLAYER LOBBY</h2>
+                    <p class="text-xs text-slate-300">Share code with friends to race together!</p>
+                </div>
+                <div class="bg-slate-900 px-4 py-2 rounded-2xl border border-slate-700 flex items-center gap-3">
+                    <span class="text-xs text-slate-400 font-bold uppercase">Room Code:</span>
+                    <span id="roomCodeDisplay" class="font-mono text-amber-300 font-bold text-lg select-all">CONNECTING...</span>
+                    <button onclick="copyRoomCode()" class="text-xs bg-slate-700 hover:bg-slate-600 px-2.5 py-1 rounded-lg text-slate-200"><i class="fa-regular fa-copy"></i> Copy</button>
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Racers in Lobby (<span id="playerCount">1</span>/4)</h3>
+                <div id="lobbyPlayerList" class="space-y-3">
+                    <!-- Dynamic Lobby Racers -->
+                </div>
+            </div>
+
+            <div class="flex gap-4">
+                <button onclick="leaveLobby()" class="w-1/3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-3 rounded-2xl border border-slate-600">LEAVE</button>
+                <button id="btnHostStart" onclick="hostStartMultiplayerGame()" class="w-2/3 btn-bounce bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-title text-xl py-3 rounded-2xl shadow-lg border-b-4 border-emerald-700">START RACE!</button>
+            </div>
+        </div>
+
+        <!-- 3D RACE GAMEPLAY SCREEN (SEPARATED COCKPIT LAYOUT) -->
+        <div id="gameScreen" class="hidden fixed inset-0 z-30 bg-slate-950 flex flex-col lg:flex-row overflow-hidden">
+            
+            <!-- Dedicated 3D Canvas Viewport (Left / Top Half) -->
+            <div id="raceSceneContainer" class="relative flex-grow h-[45vh] lg:h-full w-full bg-slate-950 border-b-4 lg:border-b-0 lg:border-r-4 border-amber-500/30 overflow-hidden">
+                <canvas id="raceCanvas" class="w-full h-full block"></canvas>
+                
+                <!-- Overlay HUD inside 3D Viewport -->
+                <div class="absolute top-3 left-3 right-3 flex justify-between items-start pointer-events-none z-10">
+                    <!-- Leaderboard Mini Tracker -->
+                    <div class="bg-slate-950/85 backdrop-blur-md p-2.5 rounded-2xl border border-slate-700/80 w-44 md:w-56 shadow-xl">
+                        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                            <i class="fa-solid fa-trophy text-amber-400"></i> Race Standings
+                        </div>
+                        <div id="hudLeaderboard" class="space-y-1 text-xs">
+                            <!-- Dynamic HUD Player Progress -->
+                        </div>
+                    </div>
+
+                    <!-- Speed & Time Badges -->
+                    <div class="flex items-center gap-2">
+                        <div class="bg-slate-950/85 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-slate-700 text-center shadow-xl">
+                            <div class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Time</div>
+                            <div id="hudTimer" class="text-base md:text-lg font-title text-emerald-400">00:00</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Track Progress Bar across bottom of 3D Canvas -->
+                <div class="absolute bottom-3 left-4 right-4 bg-slate-900/80 backdrop-blur-sm rounded-full h-3.5 border border-slate-700/80 p-0.5 pointer-events-none overflow-hidden shadow-inner">
+                    <div id="raceProgressBar" class="bg-gradient-to-r from-amber-500 via-orange-500 to-emerald-400 h-full rounded-full transition-all duration-300 w-0"></div>
+                </div>
+            </div>
+
+            <!-- Dedicated Math Cockpit Dashboard Panel (Separated Right / Bottom Panel) -->
+            <div id="mathCockpitPanel" class="w-full lg:w-[420px] xl:w-[460px] h-[55vh] lg:h-full bg-slate-900/95 backdrop-blur-xl p-4 md:p-6 flex flex-col justify-between border-t lg:border-t-0 border-slate-800 shadow-2xl relative z-20 overflow-y-auto">
+                
+                <!-- Cockpit Header Status -->
+                <div class="flex justify-between items-center pb-3 border-b border-slate-800">
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
+                        <span class="font-title text-amber-400 text-lg md:text-xl tracking-wide">MATH COCKPIT</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="bg-slate-800 px-3 py-1 rounded-xl border border-slate-700 flex items-center gap-1.5">
+                            <span class="text-xs text-slate-400 font-bold">STREAK</span>
+                            <span id="hudStreak" class="text-sm font-title text-amber-400">0 🔥</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Math Question & Display -->
+                <div id="mathCard" class="bg-slate-950/90 rounded-2xl p-4 border-2 border-amber-500/40 shadow-xl my-2 flex flex-col items-center transition-all duration-300">
+                    <div class="w-full flex justify-between items-center text-xs text-slate-400 font-bold uppercase mb-1">
+                        <span>Question <span id="qProgressNum" class="text-amber-400 font-extrabold text-sm">1</span> / 10</span>
+                        <span id="speedBoostBadge" class="hidden text-emerald-400 text-[10px] bg-emerald-950 px-2 py-0.5 rounded-full border border-emerald-600 animate-bounce">NITRO READY!</span>
+                    </div>
+
+                    <div id="questionDisplay" class="text-3xl md:text-4xl font-title text-white my-2 tracking-wider text-center drop-shadow">
+                        12 + 8 = ?
+                    </div>
+
+                    <div class="w-full mt-1 relative">
+                        <input type="text" id="answerInput" readonly placeholder="?" class="w-full bg-slate-900 border-2 border-amber-400 rounded-xl py-2 px-3 text-center text-3xl font-title text-amber-300 focus:outline-none shadow-inner tracking-widest transition-all">
+                    </div>
+                </div>
+
+                <!-- Upgraded Arcade On-Screen Keypad -->
+                <div class="flex-grow flex flex-col justify-end pt-2">
+                    <div class="grid grid-cols-3 gap-2 w-full max-w-sm mx-auto">
+                        <!-- Numpad Keys -->
+                        <button id="key-7" onclick="pressKey('7')" class="keypad-btn bg-slate-800 hover:bg-slate-700 active:bg-amber-500 text-white font-title text-2xl py-3 rounded-xl border-b-4 border-slate-950 shadow-md transition flex items-center justify-center">7</button>
+                        <button id="key-8" onclick="pressKey('8')" class="keypad-btn bg-slate-800 hover:bg-slate-700 active:bg-amber-500 text-white font-title text-2xl py-3 rounded-xl border-b-4 border-slate-950 shadow-md transition flex items-center justify-center">8</button>
+                        <button id="key-9" onclick="pressKey('9')" class="keypad-btn bg-slate-800 hover:bg-slate-700 active:bg-amber-500 text-white font-title text-2xl py-3 rounded-xl border-b-4 border-slate-950 shadow-md transition flex items-center justify-center">9</button>
+
+                        <button id="key-4" onclick="pressKey('4')" class="keypad-btn bg-slate-800 hover:bg-slate-700 active:bg-amber-500 text-white font-title text-2xl py-3 rounded-xl border-b-4 border-slate-950 shadow-md transition flex items-center justify-center">4</button>
+                        <button id="key-5" onclick="pressKey('5')" class="keypad-btn bg-slate-800 hover:bg-slate-700 active:bg-amber-500 text-white font-title text-2xl py-3 rounded-xl border-b-4 border-slate-950 shadow-md transition flex items-center justify-center">5</button>
+                        <button id="key-6" onclick="pressKey('6')" class="keypad-btn bg-slate-800 hover:bg-slate-700 active:bg-amber-500 text-white font-title text-2xl py-3 rounded-xl border-b-4 border-slate-950 shadow-md transition flex items-center justify-center">6</button>
+
+                        <button id="key-1" onclick="pressKey('1')" class="keypad-btn bg-slate-800 hover:bg-slate-700 active:bg-amber-500 text-white font-title text-2xl py-3 rounded-xl border-b-4 border-slate-950 shadow-md transition flex items-center justify-center">1</button>
+                        <button id="key-2" onclick="pressKey('2')" class="keypad-btn bg-slate-800 hover:bg-slate-700 active:bg-amber-500 text-white font-title text-2xl py-3 rounded-xl border-b-4 border-slate-950 shadow-md transition flex items-center justify-center">2</button>
+                        <button id="key-3" onclick="pressKey('3')" class="keypad-btn bg-slate-800 hover:bg-slate-700 active:bg-amber-500 text-white font-title text-2xl py-3 rounded-xl border-b-4 border-slate-950 shadow-md transition flex items-center justify-center">3</button>
+
+                        <!-- Action Controls Row -->
+                        <button id="key-minus" onclick="pressKey('-')" class="keypad-btn bg-slate-800 hover:bg-slate-700 text-amber-400 font-title text-2xl py-3 rounded-xl border-b-4 border-slate-950 shadow-md transition flex items-center justify-center">-</button>
+                        <button id="key-0" onclick="pressKey('0')" class="keypad-btn bg-slate-800 hover:bg-slate-700 active:bg-amber-500 text-white font-title text-2xl py-3 rounded-xl border-b-4 border-slate-950 shadow-md transition flex items-center justify-center">0</button>
+                        <button id="key-backspace" onclick="backspaceAnswer()" class="keypad-btn bg-rose-950/90 hover:bg-rose-900 text-rose-300 font-bold text-lg py-3 rounded-xl border-b-4 border-slate-950 shadow-md transition flex items-center justify-center">
+                            <i class="fa-solid fa-backspace text-xl"></i>
+                        </button>
+                    </div>
+
+                    <!-- Clear & Submit Buttons -->
+                    <div class="grid grid-cols-3 gap-2 w-full max-w-sm mx-auto mt-2">
+                        <button id="key-clear" onclick="clearAnswer()" class="col-span-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs py-3 rounded-xl border-b-4 border-slate-950 shadow-md transition flex items-center justify-center gap-1.5 uppercase tracking-wider">
+                            <i class="fa-solid fa-eraser text-sm text-red-400"></i> Clear
+                        </button>
+                        <button id="key-enter" onclick="submitAnswer()" class="col-span-2 btn-bounce bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-title text-xl py-3 rounded-xl border-b-4 border-emerald-800 shadow-lg transition flex items-center justify-center gap-2">
+                            <span>NITRO BOOST</span> <i class="fa-solid fa-bolt text-amber-300"></i>
                         </button>
                     </div>
                 </div>
 
-                <!-- Touch & Mouse Keypad -->
-                <div class="md:col-span-5 grid grid-cols-3 gap-2 sm:gap-3">
-                    <button onclick="pressKey('1')" class="toy-btn bg-purple-900 hover:bg-purple-800 border-2 border-purple-400 text-yellow-300 font-title text-2xl py-3 rounded-2xl">1</button>
-                    <button onclick="pressKey('2')" class="toy-btn bg-purple-900 hover:bg-purple-800 border-2 border-purple-400 text-yellow-300 font-title text-2xl py-3 rounded-2xl">2</button>
-                    <button onclick="pressKey('3')" class="toy-btn bg-purple-900 hover:bg-purple-800 border-2 border-purple-400 text-yellow-300 font-title text-2xl py-3 rounded-2xl">3</button>
-                    <button onclick="pressKey('4')" class="toy-btn bg-purple-900 hover:bg-purple-800 border-2 border-purple-400 text-yellow-300 font-title text-2xl py-3 rounded-2xl">4</button>
-                    <button onclick="pressKey('5')" class="toy-btn bg-purple-900 hover:bg-purple-800 border-2 border-purple-400 text-yellow-300 font-title text-2xl py-3 rounded-2xl">5</button>
-                    <button onclick="pressKey('6')" class="toy-btn bg-purple-900 hover:bg-purple-800 border-2 border-purple-400 text-yellow-300 font-title text-2xl py-3 rounded-2xl">6</button>
-                    <button onclick="pressKey('7')" class="toy-btn bg-purple-900 hover:bg-purple-800 border-2 border-purple-400 text-yellow-300 font-title text-2xl py-3 rounded-2xl">7</button>
-                    <button onclick="pressKey('8')" class="toy-btn bg-purple-900 hover:bg-purple-800 border-2 border-purple-400 text-yellow-300 font-title text-2xl py-3 rounded-2xl">8</button>
-                    <button onclick="pressKey('9')" class="toy-btn bg-purple-900 hover:bg-purple-800 border-2 border-purple-400 text-yellow-300 font-title text-2xl py-3 rounded-2xl">9</button>
-                    <button onclick="pressKey('-')" class="toy-btn bg-purple-900 hover:bg-purple-800 border-2 border-purple-400 text-yellow-300 font-title text-2xl py-3 rounded-2xl">-</button>
-                    <button onclick="pressKey('0')" class="toy-btn bg-purple-900 hover:bg-purple-800 border-2 border-purple-400 text-yellow-300 font-title text-2xl py-3 rounded-2xl">0</button>
-                    <button onclick="submitAnswer()" class="toy-btn bg-emerald-400 hover:bg-emerald-300 text-purple-950 font-title text-xl py-3 rounded-2xl">
-                        GO!
-                    </button>
-                </div>
             </div>
-        </section>
+        </div>
 
-        <!-- SCREEN 4: GAME OVER RESULTS SCREEN -->
-        <section id="resultsScreen" class="hidden w-full max-w-2xl glass-panel rounded-3xl p-6 sm:p-8 space-y-6 text-center border-4 border-yellow-400">
-            <div class="space-y-3">
-                <i class="fa-solid fa-trophy text-6xl text-yellow-400 animate-bounce"></i>
-                <h2 id="resultTitle" class="font-title text-3xl sm:text-5xl text-yellow-300 drop-shadow-[0_4px_0_rgba(0,0,0,0.8)]">VICTORY LAP!</h2>
-                <p id="winnerSubtitle" class="text-2xl text-cyan-300 font-bold">Player 1 wins the checkered flag!</p>
-            </div>
+        <!-- RESULTS / PODIUM SCREEN -->
+        <div id="resultsScreen" class="hidden w-full max-w-2xl glass-panel rounded-3xl p-6 md:p-8 shadow-2xl text-center relative z-40">
+            <h2 class="text-4xl md:text-5xl font-title text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-yellow-300 mb-2">RACE RESULTS</h2>
+            <p class="text-slate-300 text-sm mb-6">Great math racing skills!</p>
 
             <!-- Leaderboard Standings Table -->
-            <div class="bg-purple-950/90 p-4 rounded-2xl border-2 border-purple-500/50 space-y-3">
-                <h3 class="font-title text-sm text-yellow-300 text-left">FINAL LEADERBOARD:</h3>
-                <div id="standingsContainer" class="space-y-2">
-                    <!-- Standings populated dynamically -->
-                </div>
+            <div id="resultsList" class="space-y-3 mb-8">
+                <!-- Dynamic Results Rows -->
             </div>
 
-            <!-- Match Stats -->
-            <div class="grid grid-cols-3 gap-3 bg-purple-950 p-4 rounded-2xl border-2 border-pink-500 text-center font-title">
-                <div>
-                    <div class="text-xs text-purple-300">TIME</div>
-                    <div id="statTime" class="text-cyan-300 text-xl">00:00</div>
-                </div>
-                <div>
-                    <div class="text-xs text-purple-300">ACCURACY</div>
-                    <div id="statAccuracy" class="text-pink-400 text-xl">100%</div>
-                </div>
-                <div>
-                    <div class="text-xs text-purple-300">BEST STREAK</div>
-                    <div id="statStreak" class="text-yellow-300 text-xl">10</div>
-                </div>
+            <div class="flex gap-4">
+                <button onclick="returnToMainMenu()" class="w-full btn-bounce bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-title text-xl py-3.5 rounded-2xl shadow-lg border-b-4 border-indigo-800">
+                    <i class="fa-solid fa-house"></i> MAIN MENU
+                </button>
             </div>
-
-            <button onclick="returnToHome()" class="toy-btn w-full bg-pink-500 hover:bg-pink-400 text-white font-title py-4 rounded-2xl text-xl uppercase">
-                MAIN MENU
-            </button>
-        </section>
-
+        </div>
     </main>
 
-    <!-- FOOTER CREDITS -->
-    <footer class="p-3 bg-slate-950/80 text-center text-xs text-purple-300 font-title border-t-2 border-purple-600/30">
-        SUPER 3D MATH RACERS &bull; LEARN MATH IN 3D &bull; P2P MULTIPLAYER
-    </footer>
-
     <script>
-        /* ==========================================================================
-           GLOBAL GAME STATE & CONFIGURATION
-           ========================================================================== */
+        // Game State Engine
         const gameState = {
-            playerName: "Turbo Kid",
-            playerColor: "#ff0055",
-            difficulty: "beginner", // 'beginner', 'intermediate', 'advanced'
-            digits: 1,              // 1, 2, 3
-            isMultiplayer: false,
-            isHost: false,
-            roomId: null,
-            peer: null,
-            myPlayerId: null,       // Explicit local player ID
-            connections: {},        // peerId -> DataConnection
-            players: [],            // List of active racers
-            questions: [],          // Array of 10 math questions: { eq, answer }
+            playerName: "Speedy Math",
+            kartColor: "#ff0055",
+            difficulty: "beginner",
+            digits: 1,
+            mode: "solo", // 'solo', 'host', 'client'
+            myPlayerId: "p_local_" + Math.random().toString(36).substring(2, 7),
+            roomCode: "",
+            players: [],
+            questions: [],
             currentQIndex: 0,
-            userInput: "",
-            startTime: 0,
-            timerInterval: null,
-            soundEnabled: true,
             streak: 0,
             totalCorrect: 0,
             totalWrong: 0,
-            raceScene: null
+            startTime: 0,
+            timerInterval: null,
+            peer: null,
+            connections: {},
+            isHost: false,
+            // 3D Scene Refs
+            previewScene: null,
+            previewKart: null,
+            raceScene: null,
+            raceCamera: null,
+            raceRenderer: null,
+            nitroParticles: []
         };
 
-        /* ==========================================================================
-           AUDIO SYNTHESIZER (Web Audio API for Cheerful Sounds)
-           ========================================================================== */
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const LANE_X = [-4.5, -1.5, 1.5, 4.5];
+
+        // Web Audio Synth Engine (Retro SFX)
         let audioCtx = null;
+        let isAudioMuted = false;
 
         function initAudio() {
             if (!audioCtx) {
-                audioCtx = new AudioContext();
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             }
         }
 
-        function playRetroSound(type) {
-            if (!gameState.soundEnabled) return;
+        function toggleAudio() {
+            isAudioMuted = !isAudioMuted;
+            const icon = document.getElementById('soundIcon');
+            if (isAudioMuted) {
+                icon.className = "fa-solid fa-volume-xmark text-xl text-red-400";
+            } else {
+                icon.className = "fa-solid fa-volume-high text-xl text-amber-400";
+                playSfx('boost');
+            }
+        }
+
+        function playSfx(type) {
+            if (isAudioMuted) return;
             initAudio();
             if (!audioCtx) return;
 
+            const now = audioCtx.currentTime;
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.connect(gain);
             gain.connect(audioCtx.destination);
 
-            const now = audioCtx.currentTime;
-
-            if (type === 'key') {
+            if (type === 'correct') {
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(500, now);
-                gain.gain.setValueAtTime(0.08, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
-                osc.start(now);
-                osc.stop(now + 0.05);
-            } else if (type === 'correct') {
-                osc.type = 'triangle';
                 osc.frequency.setValueAtTime(523.25, now); // C5
-                osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
-                osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
-                osc.frequency.setValueAtTime(1046.50, now + 0.24); // C6
-                gain.gain.setValueAtTime(0.12, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+                osc.frequency.exponentialRampToValueAtTime(880, now + 0.15); // A5
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
                 osc.start(now);
-                osc.stop(now + 0.4);
+                osc.stop(now + 0.2);
             } else if (type === 'wrong') {
                 osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(220, now);
-                osc.frequency.setValueAtTime(140, now + 0.1);
-                gain.gain.setValueAtTime(0.15, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                osc.frequency.setValueAtTime(160, now);
+                osc.frequency.linearRampToValueAtTime(110, now + 0.25);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
                 osc.start(now);
-                osc.stop(now + 0.3);
-            } else if (type === 'win') {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(440, now);
-                osc.frequency.setValueAtTime(554.37, now + 0.12);
-                osc.frequency.setValueAtTime(659.25, now + 0.24);
-                osc.frequency.setValueAtTime(880, now + 0.36);
+                osc.stop(now + 0.25);
+            } else if (type === 'boost') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.exponentialRampToValueAtTime(600, now + 0.3);
                 gain.gain.setValueAtTime(0.2, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
                 osc.start(now);
-                osc.stop(now + 0.7);
+                osc.stop(now + 0.35);
+            } else if (type === 'win') {
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, idx) => {
+                    const o = audioCtx.createOscillator();
+                    const g = audioCtx.createGain();
+                    o.connect(g);
+                    g.connect(audioCtx.destination);
+                    o.frequency.value = freq;
+                    g.gain.setValueAtTime(0.2, now + idx * 0.12);
+                    g.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.12 + 0.25);
+                    o.start(now + idx * 0.12);
+                    o.stop(now + idx * 0.12 + 0.25);
+                });
+            } else if (type === 'click') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(200, now + 0.05);
+                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                osc.start(now);
+                osc.stop(now + 0.05);
             }
         }
 
-        function toggleAudio() {
-            gameState.soundEnabled = !gameState.soundEnabled;
-            const icon = document.getElementById('soundIcon');
-            if (gameState.soundEnabled) {
-                icon.className = 'fa-solid fa-volume-high';
-            } else {
-                icon.className = 'fa-solid fa-volume-xmark text-gray-400';
-            }
-        }
-
-        function showModal(title, message) {
-            document.getElementById('modalTitle').innerText = title;
-            document.getElementById('modalMessage').innerText = message;
-            document.getElementById('customModal').classList.remove('hidden');
-        }
-
-        function closeModal() {
-            document.getElementById('customModal').classList.add('hidden');
-        }
-
-        /* ==========================================================================
-           MATH EQUATION GENERATOR (10 Questions per Round)
-           ========================================================================== */
         function getRandomInt(min, max) {
             return Math.floor(Math.random() * (max - min + 1)) + min;
         }
 
-        function getDigitRange(digits) {
+        function getMinMaxForDigits(digits) {
             if (digits === 1) return { min: 1, max: 9 };
             if (digits === 2) return { min: 10, max: 99 };
             return { min: 100, max: 999 };
         }
 
-        function generateMathQuestions(difficulty, digits) {
-            const questions = [];
-            const { min, max } = getDigitRange(digits);
+        function generateMathQuestions(difficulty, digits, count = 10) {
+            const list = [];
+            const { min, max } = getMinMaxForDigits(digits);
 
-            for (let i = 0; i < 10; i++) {
-                let eq = "";
-                let ans = 0;
+            for (let i = 0; i < count; i++) {
+                let op = '+';
+                let num1 = 0, num2 = 0, answer = 0;
 
                 if (difficulty === 'beginner') {
-                    // Lower primary: Addition & Subtraction only
-                    const isAdd = Math.random() > 0.5;
-                    const num1 = getRandomInt(min, max);
-                    const num2 = getRandomInt(min, max);
-
-                    if (isAdd) {
-                        eq = `${num1} + ${num2}`;
-                        ans = num1 + num2;
-                    } else {
-                        const bigger = Math.max(num1, num2);
-                        const smaller = Math.min(num1, num2);
-                        eq = `${bigger} - ${smaller}`;
-                        ans = bigger - smaller;
-                    }
-
-                } else if (difficulty === 'intermediate') {
-                    // Higher primary: +, -, ×, ÷
-                    const ops = ['+', '-', '*', '/'];
-                    const op = ops[Math.floor(Math.random() * ops.length)];
-
+                    op = Math.random() < 0.5 ? '+' : '-';
                     if (op === '+') {
-                        const a = getRandomInt(min, max);
-                        const b = getRandomInt(min, max);
-                        eq = `${a} + ${b}`;
-                        ans = a + b;
-                    } else if (op === '-') {
-                        const a = getRandomInt(min, max);
-                        const b = getRandomInt(min, max);
-                        const bigger = Math.max(a, b);
-                        const smaller = Math.min(a, b);
-                        eq = `${bigger} - ${smaller}`;
-                        ans = bigger - smaller;
-                    } else if (op === '*') {
-                        const mulMax = digits === 1 ? 9 : (digits === 2 ? 15 : 25);
-                        const a = getRandomInt(2, mulMax);
-                        const b = getRandomInt(2, mulMax);
-                        eq = `${a} × ${b}`;
-                        ans = a * b;
-                    } else if (op === '/') {
-                        const divMax = digits === 1 ? 9 : (digits === 2 ? 12 : 20);
-                        const divisor = getRandomInt(2, divMax);
-                        const quotient = getRandomInt(1, divMax);
-                        const dividend = divisor * quotient;
-                        eq = `${dividend} ÷ ${divisor}`;
-                        ans = quotient;
-                    }
-
-                } else {
-                    // Advanced: Signed numbers, multi-step, simple linear x
-                    const mode = Math.random();
-
-                    if (mode < 0.35) {
-                        const a = getRandomInt(-15 * digits, 15 * digits);
-                        const b = getRandomInt(-15 * digits, 15 * digits);
-                        const isAdd = Math.random() > 0.5;
-                        if (isAdd) {
-                            eq = `(${a}) + (${b})`;
-                            ans = a + b;
-                        } else {
-                            eq = `(${a}) - (${b})`;
-                            ans = a - b;
-                        }
-                    } else if (mode < 0.7) {
-                        const a = getRandomInt(2, 9);
-                        const b = getRandomInt(2, 9);
-                        const c = getRandomInt(1, 9);
-                        eq = `${a} × (${b} + ${c})`;
-                        ans = a * (b + c);
+                        num1 = getRandomInt(min, max);
+                        num2 = getRandomInt(min, max);
+                        answer = num1 + num2;
                     } else {
-                        const x = getRandomInt(1, 12);
-                        const coef = getRandomInt(2, 5);
-                        const constant = getRandomInt(1, 20);
-                        const result = coef * x + constant;
-                        eq = `${coef}x + ${constant} = ${result}  (x = ?)`;
-                        ans = x;
+                        num1 = getRandomInt(min, max);
+                        num2 = getRandomInt(min, max);
+                        if (num1 < num2) [num1, num2] = [num2, num1];
+                        answer = num1 - num2;
+                    }
+                } else if (difficulty === 'intermediate') {
+                    const ops = ['+', '-', '*', '/'];
+                    op = ops[Math.floor(Math.random() * ops.length)];
+                    if (op === '+') {
+                        num1 = getRandomInt(min, max);
+                        num2 = getRandomInt(min, max);
+                        answer = num1 + num2;
+                    } else if (op === '-') {
+                        num1 = getRandomInt(min, max);
+                        num2 = getRandomInt(min, max);
+                        if (num1 < num2) [num1, num2] = [num2, num1];
+                        answer = num1 - num2;
+                    } else if (op === '*') {
+                        const maxMult = digits === 1 ? 9 : (digits === 2 ? 15 : 25);
+                        num1 = getRandomInt(2, maxMult);
+                        num2 = getRandomInt(2, digits === 1 ? 9 : 12);
+                        answer = num1 * num2;
+                    } else if (op === '/') {
+                        num2 = getRandomInt(2, digits === 1 ? 9 : 12);
+                        answer = getRandomInt(2, digits === 1 ? 9 : 15);
+                        num1 = num2 * answer;
+                    }
+                } else { // Advanced
+                    const ops = ['+', '-', '*', '/'];
+                    op = ops[Math.floor(Math.random() * ops.length)];
+                    if (op === '+') {
+                        num1 = getRandomInt(min, max * 2);
+                        num2 = getRandomInt(min, max);
+                        answer = num1 + num2;
+                    } else if (op === '-') {
+                        num1 = getRandomInt(min * 2, max * 2);
+                        num2 = getRandomInt(min, num1);
+                        answer = num1 - num2;
+                    } else if (op === '*') {
+                        num1 = getRandomInt(min, max);
+                        num2 = getRandomInt(2, 15);
+                        answer = num1 * num2;
+                    } else if (op === '/') {
+                        num2 = getRandomInt(2, 20);
+                        answer = getRandomInt(min, max);
+                        num1 = num2 * answer;
                     }
                 }
 
-                questions.push({ eq, answer: ans });
-            }
+                let displayOp = op;
+                if (op === '*') displayOp = '×';
+                if (op === '/') displayOp = '÷';
 
-            return questions;
+                list.push({
+                    text: `${num1} ${displayOp} ${num2} = ?`,
+                    answer: answer
+                });
+            }
+            return list;
         }
 
-        /* ==========================================================================
-           THREE.JS PROCEDURAL 3D KART BUILDER & UTILITIES
-           ========================================================================== */
         function create3DKart(colorHex) {
-            const kartGroup = new THREE.Group();
+            const group = new THREE.Group();
 
-            // Main Kart Body (Chassis)
+            // Body
             const bodyGeo = new THREE.BoxGeometry(1.6, 0.6, 2.6);
-            const bodyMat = new THREE.MeshToonMaterial({ color: colorHex });
-            const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
-            bodyMesh.position.y = 0.5;
-            kartGroup.add(bodyMesh);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.3, metalness: 0.2 });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 0.5;
+            group.add(body);
 
-            // Windshield / Cockpit
-            const cabinGeo = new THREE.BoxGeometry(1.2, 0.5, 1.1);
-            const cabinMat = new THREE.MeshToonMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.8 });
-            const cabinMesh = new THREE.Mesh(cabinGeo, cabinMat);
-            cabinMesh.position.set(0, 0.9, -0.2);
-            kartGroup.add(cabinMesh);
+            // Roof / Seat
+            const cabinGeo = new THREE.BoxGeometry(1.2, 0.5, 1.2);
+            const cabinMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.1 });
+            const cabin = new THREE.Mesh(cabinGeo, cabinMat);
+            cabin.position.set(0, 0.9, -0.2);
+            group.add(cabin);
 
-            // Rear Spoiler
-            const spoilerBarGeo = new THREE.BoxGeometry(1.4, 0.15, 0.4);
-            const spoilerBarMat = new THREE.MeshToonMaterial({ color: 0x111111 });
-            const spoilerBar = new THREE.Mesh(spoilerBarGeo, spoilerBarMat);
-            spoilerBar.position.set(0, 1.1, 1.1);
-            kartGroup.add(spoilerBar);
-
-            const wingGeo1 = new THREE.BoxGeometry(0.1, 0.5, 0.1);
-            const w1 = new THREE.Mesh(wingGeo1, spoilerBarMat);
-            w1.position.set(-0.5, 0.8, 1.1);
-            const w2 = new THREE.Mesh(wingGeo1, spoilerBarMat);
-            w2.position.set(0.5, 0.8, 1.1);
-            kartGroup.add(w1);
-            kartGroup.add(w2);
-
-            // Headlights
-            const headMat = new THREE.MeshBasicMaterial({ color: 0xffea00 });
-            const headGeo = new THREE.CylinderGeometry(0.18, 0.18, 0.1, 16);
-            headGeo.rotateX(Math.PI / 2);
-            const hl = new THREE.Mesh(headGeo, headMat);
-            hl.position.set(-0.5, 0.55, -1.31);
-            const hr = new THREE.Mesh(headGeo, headMat);
-            hr.position.set(0.5, 0.55, -1.31);
-            kartGroup.add(hl);
-            kartGroup.add(hr);
-
-            // 4 Wheels
+            // Wheels
             const wheelGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.3, 16);
-            wheelGeo.rotateZ(Math.PI / 2);
-            const wheelMat = new THREE.MeshToonMaterial({ color: 0x222222 });
-            const hubMat = new THREE.MeshToonMaterial({ color: 0xdddddd });
-
+            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.8 });
             const wheelPositions = [
-                [-0.9, 0.35, -0.8], // Front Left
-                [0.9, 0.35, -0.8],  // Front Right
-                [-0.9, 0.35, 0.8],  // Rear Left
-                [0.9, 0.35, 0.8]    // Rear Right
+                [-0.95, 0.35, 0.8],
+                [0.95, 0.35, 0.8],
+                [-0.95, 0.35, -0.8],
+                [0.95, 0.35, -0.8]
             ];
-
             const wheels = [];
             wheelPositions.forEach(pos => {
-                const wheelGroup = new THREE.Group();
-                const tyre = new THREE.Mesh(wheelGeo, wheelMat);
-                wheelGroup.add(tyre);
-
-                const hubGeo = new THREE.CylinderGeometry(0.18, 0.18, 0.32, 12);
-                hubGeo.rotateZ(Math.PI / 2);
-                const hub = new THREE.Mesh(hubGeo, hubMat);
-                wheelGroup.add(hub);
-
-                wheelGroup.position.set(...pos);
-                kartGroup.add(wheelGroup);
-                wheels.push(wheelGroup);
+                const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+                wheel.rotation.z = Math.PI / 2;
+                wheel.position.set(...pos);
+                group.add(wheel);
+                wheels.push(wheel);
             });
 
-            kartGroup.userData = { wheels, colorHex, bodyMat };
-            return kartGroup;
+            // Headlights
+            const lightGeo = new THREE.SphereGeometry(0.15, 8, 8);
+            const lightMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+            const hl1 = new THREE.Mesh(lightGeo, lightMat);
+            hl1.position.set(-0.5, 0.5, -1.3);
+            const hl2 = new THREE.Mesh(lightGeo, lightMat);
+            hl2.position.set(0.5, 0.5, -1.3);
+            group.add(hl1);
+            group.add(hl2);
+
+            group.userData = { wheels, color: colorHex };
+            return group;
         }
 
-        /* ==========================================================================
-           3D PREVIEW CANVAS (Home Screen)
-           ========================================================================== */
-        let previewScene, previewCamera, previewRenderer, previewKart;
-
+        // Initialize Home Menu 3D Preview
         function init3DPreview() {
             const canvas = document.getElementById('previewCanvas');
-            const width = canvas.clientWidth || 300;
-            const height = canvas.clientHeight || 200;
+            if (!canvas) return;
+            const width = canvas.clientWidth;
+            const height = canvas.clientHeight;
 
-            previewScene = new THREE.Scene();
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x020617);
+            const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+            camera.position.set(3, 2.5, 4);
+            camera.lookAt(0, 0.5, 0);
 
-            previewCamera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-            previewCamera.position.set(3, 2.5, 4);
-            previewCamera.lookAt(0, 0.5, 0);
+            const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+            renderer.setSize(width, height);
 
-            previewRenderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-            previewRenderer.setSize(width, height);
-            previewRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
-            // Lighting
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-            previewScene.add(ambientLight);
-
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            scene.add(ambientLight);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
             dirLight.position.set(5, 10, 7);
-            previewScene.add(dirLight);
+            scene.add(dirLight);
 
-            // Add Kart
-            previewKart = create3DKart(gameState.playerColor);
-            previewScene.add(previewKart);
+            const kart = create3DKart(gameState.kartColor);
+            scene.add(kart);
+            gameState.previewScene = scene;
+            gameState.previewKart = kart;
 
-            // Animate spin
             function animatePreview() {
-                if (document.getElementById('homeScreen').classList.contains('hidden')) return;
-                requestAnimationFrame(animatePreview);
-
-                if (previewKart) {
-                    previewKart.rotation.y += 0.015;
-                    // Rotate wheels slowly
-                    previewKart.userData.wheels.forEach(w => w.rotation.x += 0.03);
+                if (gameState.previewKart) {
+                    gameState.previewKart.rotation.y += 0.015;
                 }
-
-                previewRenderer.render(previewScene, previewCamera);
+                renderer.render(scene, camera);
+                requestAnimationFrame(animatePreview);
             }
             animatePreview();
         }
 
-        function updatePreviewColor(colorHex) {
-            if (previewKart && previewKart.userData.bodyMat) {
-                previewKart.userData.bodyMat.color.set(colorHex);
+        function updateKartColor(kartMesh, colorHex) {
+            if (!kartMesh) return;
+            kartMesh.userData.color = colorHex;
+            kartMesh.children.forEach(child => {
+                if (child.material && child.geometry && child.geometry.type === 'BoxGeometry' && child.position.y === 0.5) {
+                    child.material.color.set(colorHex);
+                }
+            });
+        }
+
+        function setKartColor(color) {
+            gameState.kartColor = color;
+            if (gameState.previewKart) {
+                updateKartColor(gameState.previewKart, color);
+            }
+            const me = getLocalPlayer();
+            if (me) {
+                me.color = color;
             }
         }
 
-        /* ==========================================================================
-           HOME SCREEN & CONFIG HANDLERS
-           ========================================================================== */
-        function selectCarColor(color) {
-            gameState.playerColor = color;
-            updatePreviewColor(color);
+        function init3DRaceScene() {
+            const container = document.getElementById('raceSceneContainer');
+            const canvas = document.getElementById('raceCanvas');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
 
-            document.querySelectorAll('.color-btn').forEach(btn => {
-                if (btn.dataset.color === color) {
-                    btn.classList.add('ring-4', 'ring-yellow-400', 'scale-110');
-                } else {
-                    btn.classList.remove('ring-4', 'ring-yellow-400', 'scale-110');
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x38bdf8); // Blue Sky
+            scene.fog = new THREE.FogExp2(0x38bdf8, 0.008);
+
+            const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 500);
+            const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+            // Lighting
+            const ambient = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambient);
+            const sun = new THREE.DirectionalLight(0xfffbeb, 1.2);
+            sun.position.set(20, 40, 20);
+            scene.add(sun);
+
+            // Ground Grass
+            const grassGeo = new THREE.PlaneGeometry(300, 300);
+            const grassMat = new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.9 });
+            const grass = new THREE.Mesh(grassGeo, grassMat);
+            grass.rotation.x = -Math.PI / 2;
+            grass.position.z = -50;
+            scene.add(grass);
+
+            // Track Asphalt Road
+            const roadGeo = new THREE.PlaneGeometry(20, 200);
+            const roadMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5 });
+            const road = new THREE.Mesh(roadGeo, roadMat);
+            road.rotation.x = -Math.PI / 2;
+            road.position.set(0, 0.01, -45);
+            scene.add(road);
+
+            // Lane Divider Lines
+            for (let i = -80; i < 40; i += 8) {
+                [-3, 0, 3].forEach(lx => {
+                    const lineGeo = new THREE.PlaneGeometry(0.3, 4);
+                    const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+                    const line = new THREE.Mesh(lineGeo, lineMat);
+                    line.rotation.x = -Math.PI / 2;
+                    line.position.set(lx, 0.02, i);
+                    scene.add(line);
+                });
+            }
+
+            // Finish Line Arch
+            const archGroup = new THREE.Group();
+            const pillarGeo = new THREE.BoxGeometry(1, 6, 1);
+            const pillarMat = new THREE.MeshStandardMaterial({ color: 0xef4444 });
+            const p1 = new THREE.Mesh(pillarGeo, pillarMat);
+            p1.position.set(-10, 3, -95);
+            const p2 = new THREE.Mesh(pillarGeo, pillarMat);
+            p2.position.set(10, 3, -95);
+            const topGeo = new THREE.BoxGeometry(21, 1.2, 1);
+            const topBanner = new THREE.Mesh(topGeo, pillarMat);
+            topBanner.position.set(0, 6, -95);
+            archGroup.add(p1, p2, topBanner);
+            scene.add(archGroup);
+
+            // Environment Trees
+            for (let z = -90; z < 20; z += 15) {
+                [-14, 14].forEach(tx => {
+                    const treeGroup = new THREE.Group();
+                    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 3), new THREE.MeshStandardMaterial({ color: 0x78350f }));
+                    trunk.position.y = 1.5;
+                    const leaves = new THREE.Mesh(new THREE.ConeGeometry(2, 5, 8), new THREE.MeshStandardMaterial({ color: 0x15803d }));
+                    leaves.position.y = 4;
+                    treeGroup.add(trunk, leaves);
+                    treeGroup.position.set(tx + (Math.random() - 0.5) * 2, 0, z);
+                    scene.add(treeGroup);
+                });
+            }
+
+            // Add Player 3D Karts based on assigned lane
+            gameState.players.forEach((p, idx) => {
+                const laneIdx = (p.lane !== undefined ? p.lane : idx) % 4;
+                const kartMesh = create3DKart(p.color || "#ff0055");
+                kartMesh.position.set(LANE_X[laneIdx], 0, 15);
+                scene.add(kartMesh);
+                p.mesh = kartMesh;
+            });
+
+            gameState.raceScene = scene;
+            gameState.raceCamera = camera;
+            gameState.raceRenderer = renderer;
+
+            const resizeViewport = () => {
+                if (!gameState.raceRenderer || !gameState.raceCamera || !container) return;
+                const newW = container.clientWidth;
+                const newH = container.clientHeight;
+                if (newW === 0 || newH === 0) return;
+                gameState.raceCamera.aspect = newW / newH;
+                gameState.raceCamera.updateProjectionMatrix();
+                gameState.raceRenderer.setSize(newW, newH);
+            };
+
+            window.addEventListener('resize', resizeViewport);
+            setTimeout(resizeViewport, 50);
+
+            // Start Main Animation Loop
+            renderRaceLoop();
+        }
+
+        function triggerNitroParticles(kartMesh) {
+            if (!gameState.raceScene || !kartMesh) return;
+            for (let i = 0; i < 12; i++) {
+                const pGeo = new THREE.SphereGeometry(0.15 + Math.random() * 0.1, 8, 8);
+                const pMat = new THREE.MeshBasicMaterial({ color: Math.random() < 0.5 ? 0x3b82f6 : 0xf59e0b, transparent: true, opacity: 0.9 });
+                const particle = new THREE.Mesh(pGeo, pMat);
+                particle.position.copy(kartMesh.position);
+                particle.position.z += 1.3;
+                particle.position.x += (Math.random() - 0.5) * 0.6;
+                particle.position.y += 0.4 + (Math.random() - 0.5) * 0.3;
+
+                gameState.raceScene.add(particle);
+                gameState.nitroParticles.push({
+                    mesh: particle,
+                    life: 1.0,
+                    velZ: 0.2 + Math.random() * 0.2,
+                    velY: Math.random() * 0.1
+                });
+            }
+        }
+
+        function renderRaceLoop() {
+            if (document.getElementById('gameScreen').classList.contains('hidden')) return;
+            requestAnimationFrame(renderRaceLoop);
+
+            const me = getLocalPlayer();
+
+            gameState.players.forEach(p => {
+                if (p.mesh) {
+                    // Safe numeric target distance formula (10 questions = -95 Z finish line)
+                    const safeProgress = Number.isFinite(p.progress) ? p.progress : 0;
+                    const targetZ = 15 - (safeProgress / 10) * 110;
+
+                    // Smooth interpolation
+                    p.mesh.position.z += (targetZ - p.mesh.position.z) * 0.1;
+
+                    // Spin wheels when kart is accelerating
+                    if (Math.abs(targetZ - p.mesh.position.z) > 0.1) {
+                        p.mesh.userData.wheels.forEach(w => w.rotation.x += 0.25);
+                    }
                 }
             });
+
+            // Update Nitro Particles
+            for (let i = gameState.nitroParticles.length - 1; i >= 0; i--) {
+                const pt = gameState.nitroParticles[i];
+                pt.life -= 0.05;
+                pt.mesh.position.z += pt.velZ;
+                pt.mesh.position.y += pt.velY;
+                pt.mesh.material.opacity = pt.life;
+                if (pt.life <= 0) {
+                    gameState.raceScene.remove(pt.mesh);
+                    gameState.nitroParticles.splice(i, 1);
+                }
+            }
+
+            // Dynamic Smooth Camera Follow Behind Local Player
+            if (me && me.mesh && gameState.raceCamera) {
+                const targetCamX = me.mesh.position.x * 0.4;
+                const targetCamZ = me.mesh.position.z + 10;
+                const targetCamY = 6.2;
+
+                gameState.raceCamera.position.x += (targetCamX - gameState.raceCamera.position.x) * 0.1;
+                gameState.raceCamera.position.y += (targetCamY - gameState.raceCamera.position.y) * 0.1;
+                gameState.raceCamera.position.z += (targetCamZ - gameState.raceCamera.position.z) * 0.1;
+                gameState.raceCamera.lookAt(me.mesh.position.x * 0.2, 2.8, me.mesh.position.z - 12);
+            }
+
+            if (gameState.raceRenderer && gameState.raceScene && gameState.raceCamera) {
+                gameState.raceRenderer.render(gameState.raceScene, gameState.raceCamera);
+            }
+        }
+
+        function getLocalPlayer() {
+            return gameState.players.find(p => p.id === gameState.myPlayerId) || gameState.players[0];
         }
 
         function setDifficulty(diff) {
             gameState.difficulty = diff;
             document.querySelectorAll('.diff-btn').forEach(btn => {
-                btn.className = "diff-btn toy-btn p-4 rounded-2xl border-4 border-purple-700 bg-purple-950/60 text-left transition";
+                btn.className = "diff-btn py-2 px-3 rounded-xl border text-xs md:text-sm font-bold bg-slate-800 text-slate-300 border-slate-600 hover:bg-slate-700";
             });
-            const activeBtn = document.getElementById(`diff-${diff}`);
-            activeBtn.className = "diff-btn toy-btn p-4 rounded-2xl border-4 border-pink-500 bg-pink-600/40 text-left transition";
+            const selectedMap = {
+                'beginner': 'btnDiffBeginner',
+                'intermediate': 'btnDiffInter',
+                'advanced': 'btnDiffAdv'
+            };
+            const activeBtn = document.getElementById(selectedMap[diff]);
+            if (activeBtn) {
+                activeBtn.className = "diff-btn py-2 px-3 rounded-xl border text-xs md:text-sm font-bold bg-amber-500 text-slate-950 border-amber-300 shadow";
+            }
         }
 
         function setDigits(num) {
             gameState.digits = num;
             document.querySelectorAll('.digit-btn').forEach(btn => {
-                btn.className = "digit-btn toy-btn py-3 px-4 rounded-2xl border-4 border-purple-700 bg-purple-950/60 text-center font-title text-lg";
+                btn.className = "digit-btn py-2 px-3 rounded-xl border text-sm font-bold bg-slate-800 text-slate-300 border-slate-600 hover:bg-slate-700";
             });
-            const activeBtn = document.getElementById(`digit-${num}`);
-            activeBtn.className = "digit-btn toy-btn py-3 px-4 rounded-2xl border-4 border-pink-500 bg-pink-600/40 text-center font-title text-lg";
-        }
-
-        function getPlayerNameInput() {
-            const val = document.getElementById('playerNameInput').value.trim();
-            return val ? val : "Turbo Kid";
-        }
-
-        /* ==========================================================================
-           PEERJS MULTIPLAYER LOGIC
-           ========================================================================== */
-        function generateRoomCode() {
-            const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-            let code = "";
-            for (let i = 0; i < 6; i++) {
-                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            const activeBtn = document.getElementById(`btnDigit${num}`);
+            if (activeBtn) {
+                activeBtn.className = "digit-btn py-2 px-3 rounded-xl border text-sm font-bold bg-amber-500 text-slate-950 border-amber-300 shadow";
             }
-            return code;
         }
 
-        function createP2PLobby() {
-            initAudio();
-            gameState.playerName = getPlayerNameInput();
-            gameState.isMultiplayer = true;
-            gameState.isHost = true;
-            gameState.roomId = generateRoomCode();
+        function highlightKeyBtn(btnId) {
+            const btn = document.getElementById(btnId);
+            if (btn) {
+                btn.classList.add('keypad-active');
+                setTimeout(() => btn.classList.remove('keypad-active'), 120);
+            }
+        }
 
-            try {
-                gameState.peer = new Peer(`MATH3D-${gameState.roomId}`);
-            } catch (e) {
-                showModal("PEERJS ERROR", "Failed to initialize PeerJS network connection.");
+        function pressKey(val) {
+            playSfx('click');
+            const btnId = val === '-' ? 'key-minus' : `key-${val}`;
+            highlightKeyBtn(btnId);
+
+            const input = document.getElementById('answerInput');
+            if (!input) return;
+            if (val === '-') {
+                if (input.value === '') input.value = '-';
                 return;
             }
-
-            gameState.peer.on('open', (id) => {
-                showLobbyScreen();
-                setupHostPlayerState();
-            });
-
-            gameState.peer.on('connection', (conn) => {
-                conn.on('open', () => {
-                    if (gameState.players.length >= 4) {
-                        conn.send({ type: 'FULL' });
-                        conn.close();
-                        return;
-                    }
-
-                    const connId = conn.peer;
-                    gameState.connections[connId] = conn;
-
-                    conn.on('data', (data) => {
-                        handlePeerData(connId, data);
-                    });
-
-                    conn.on('close', () => {
-                        handlePeerDisconnect(connId);
-                    });
-                });
-            });
-
-            gameState.peer.on('error', (err) => {
-                console.error("PeerJS error:", err);
-                showModal("CONNECTION ERROR", "Room code collision or server error. Try again!");
-            });
-        }
-
-        function showJoinInput() {
-            const drawer = document.getElementById('joinCodeDrawer');
-            drawer.classList.toggle('hidden');
-        }
-
-        function joinP2PLobby() {
-            initAudio();
-            const inputCode = document.getElementById('joinRoomInput').value.trim().toUpperCase();
-            if (inputCode.length !== 6) {
-                showModal("INVALID CODE", "Please enter a valid 6-character room code.");
-                return;
-            }
-
-            gameState.playerName = getPlayerNameInput();
-            gameState.isMultiplayer = true;
-            gameState.isHost = false;
-            gameState.roomId = inputCode;
-
-            try {
-                gameState.peer = new Peer();
-            } catch (e) {
-                showModal("ERROR", "Could not initialize network.");
-                return;
-            }
-
-            gameState.peer.on('open', (id) => {
-                const hostPeerId = `MATH3D-${gameState.roomId}`;
-                const conn = gameState.peer.connect(hostPeerId);
-
-                conn.on('open', () => {
-                    gameState.connections['host'] = conn;
-                    conn.send({
-                        type: 'JOIN',
-                        name: gameState.playerName,
-                        color: gameState.playerColor
-                    });
-                });
-
-                conn.on('data', (data) => {
-                    handleClientPeerData(data);
-                });
-
-                conn.on('error', (err) => {
-                    showModal("CONNECTION FAILED", "Unable to connect to room code " + inputCode);
-                });
-            });
-
-            gameState.peer.on('error', (err) => {
-                showModal("ERROR", "Peer connection failed. Check your internet or room code.");
-            });
-        }
-
-        function setupHostPlayerState() {
-            gameState.players = [{
-                id: 'host',
-                name: gameState.playerName + " (Host)",
-                color: gameState.playerColor,
-                isAi: false,
-                progress: 0,
-                streak: 0,
-                totalCorrect: 0,
-                totalWrong: 0,
-                isFinished: false,
-                finishTime: 0
-            }];
-            updateLobbyUI();
-        }
-
-        function handlePeerData(connId, data) {
-            if (data.type === 'JOIN') {
-                const newPlayer = {
-                    id: connId,
-                    name: data.name,
-                    color: data.color,
-                    isAi: false,
-                    progress: 0,
-                    streak: 0,
-                    totalCorrect: 0,
-                    totalWrong: 0,
-                    isFinished: false,
-                    finishTime: 0
-                };
-                gameState.players.push(newPlayer);
-                updateLobbyUI();
-                broadcastLobbyState();
-            } else if (data.type === 'PROGRESS_UPDATE') {
-                const player = gameState.players.find(p => p.id === connId);
-                if (player) {
-                    player.progress = data.progress;
-                    player.streak = data.streak;
-                    player.totalCorrect = data.totalCorrect;
-                    player.totalWrong = data.totalWrong;
-                    if (data.isFinished) {
-                        player.isFinished = true;
-                        player.finishTime = data.finishTime;
-                    }
-                }
-                broadcastRaceState();
-                checkGameFinished();
+            if (input.value.length < 6) {
+                input.value += val;
             }
         }
 
-        function handleClientPeerData(data) {
-            if (data.type === 'LOBBY_STATE') {
-                gameState.players = data.players;
-                showLobbyScreen();
-                updateLobbyUI();
-            } else if (data.type === 'START_GAME') {
-                gameState.difficulty = data.difficulty;
-                gameState.digits = data.digits;
-                gameState.players = data.players;
-                // Generate unique math questions independently for this player
-                gameState.questions = generateMathQuestions(data.difficulty, data.digits);
-                startRaceUI();
-            } else if (data.type === 'RACE_STATE') {
-                gameState.players = data.players;
-            } else if (data.type === 'GAME_OVER') {
-                gameState.players = data.players;
-                showResultsScreen();
-            } else if (data.type === 'FULL') {
-                showModal("ROOM FULL", "This race room is already full (max 4 players).");
+        function backspaceAnswer() {
+            playSfx('click');
+            highlightKeyBtn('key-backspace');
+            const input = document.getElementById('answerInput');
+            if (input && input.value.length > 0) {
+                input.value = input.value.slice(0, -1);
             }
         }
 
-        function handlePeerDisconnect(connId) {
-            gameState.players = gameState.players.filter(p => p.id !== connId);
-            delete gameState.connections[connId];
-            if (gameState.isHost) {
-                updateLobbyUI();
-                broadcastLobbyState();
-            }
-        }
-
-        function getLocalPlayer() {
-            if (!gameState.isMultiplayer) {
-                return gameState.players.find(p => p.id === 'local') || gameState.players[0];
-            }
-            if (gameState.myPlayerId) {
-                const found = gameState.players.find(p => p.id === gameState.myPlayerId);
-                if (found) return found;
-            }
-            if (gameState.isHost) {
-                return gameState.players.find(p => p.id === 'host') || gameState.players[0];
-            }
-            return gameState.players.find(p => p.name === gameState.playerName) || null;
-        }
-
-        function mergePlayerData(newPlayers) {
-            if (!Array.isArray(newPlayers)) return;
-            const myPlayer = getLocalPlayer();
-
-            newPlayers.forEach(np => {
-                let existing = gameState.players.find(p => p.id === np.id || (p.name === np.name && p.isAi === np.isAi));
-                if (existing) {
-                    existing.name = np.name;
-                    existing.color = np.color;
-
-                    // Only update remote players' progress to avoid overwriting local state
-                    if (existing !== myPlayer) {
-                        existing.progress = np.progress;
-                        existing.streak = np.streak;
-                        existing.totalCorrect = np.totalCorrect;
-                        existing.totalWrong = np.totalWrong;
-                        existing.isFinished = np.isFinished;
-                        existing.finishTime = np.finishTime;
-                    } else if (np.isFinished) {
-                        existing.isFinished = true;
-                        existing.finishTime = np.finishTime;
-                    }
-                } else {
-                    const newEntry = { ...np };
-                    if (gameState.raceScene && !newEntry.mesh) {
-                        const laneIdx = gameState.players.length % 4;
-                        const kart = create3DKart(newEntry.color);
-                        kart.position.set(LANE_X[laneIdx], 0, 10);
-                        gameState.raceScene.add(kart);
-                        newEntry.mesh = kart;
-                    }
-                    gameState.players.push(newEntry);
-                }
-            });
-        }
-
-        function createP2PLobby() {
-            initAudio();
-            gameState.playerName = getPlayerNameInput();
-            gameState.isMultiplayer = true;
-            gameState.isHost = true;
-            gameState.myPlayerId = 'host';
-            gameState.roomId = generateRoomCode();
-
-            try {
-                gameState.peer = new Peer(`MATH3D-${gameState.roomId}`);
-            } catch (e) {
-                showModal("PEERJS ERROR", "Failed to initialize PeerJS network connection.");
-                return;
-            }
-
-            gameState.peer.on('open', (id) => {
-                showLobbyScreen();
-                setupHostPlayerState();
-            });
-
-            gameState.peer.on('connection', (conn) => {
-                conn.on('open', () => {
-                    if (gameState.players.length >= 4) {
-                        conn.send({ type: 'FULL' });
-                        conn.close();
-                        return;
-                    }
-
-                    const connId = conn.peer;
-                    gameState.connections[connId] = conn;
-
-                    conn.on('data', (data) => {
-                        handlePeerData(connId, data);
-                    });
-
-                    conn.on('close', () => {
-                        handlePeerDisconnect(connId);
-                    });
-                });
-            });
-
-            gameState.peer.on('error', (err) => {
-                console.error("PeerJS error:", err);
-                showModal("CONNECTION ERROR", "Room code collision or server error. Try again!");
-            });
-        }
-
-        function joinP2PLobby() {
-            initAudio();
-            const inputCode = document.getElementById('joinRoomInput').value.trim().toUpperCase();
-            if (inputCode.length !== 6) {
-                showModal("INVALID CODE", "Please enter a valid 6-character room code.");
-                return;
-            }
-
-            gameState.playerName = getPlayerNameInput();
-            gameState.isMultiplayer = true;
-            gameState.isHost = false;
-            gameState.roomId = inputCode;
-
-            try {
-                gameState.peer = new Peer();
-            } catch (e) {
-                showModal("ERROR", "Could not initialize network.");
-                return;
-            }
-
-            gameState.peer.on('open', (id) => {
-                gameState.myPlayerId = id;
-                const hostPeerId = `MATH3D-${gameState.roomId}`;
-                const conn = gameState.peer.connect(hostPeerId);
-
-                conn.on('open', () => {
-                    gameState.connections['host'] = conn;
-                    conn.send({
-                        type: 'JOIN',
-                        id: gameState.myPlayerId,
-                        name: gameState.playerName,
-                        color: gameState.playerColor
-                    });
-                });
-
-                conn.on('data', (data) => {
-                    handleClientPeerData(data);
-                });
-
-                conn.on('error', (err) => {
-                    showModal("CONNECTION FAILED", "Unable to connect to room code " + inputCode);
-                });
-            });
-
-            gameState.peer.on('error', (err) => {
-                showModal("ERROR", "Peer connection failed. Check your internet or room code.");
-            });
-        }
-
-        function setupHostPlayerState() {
-            gameState.myPlayerId = 'host';
-            gameState.players = [{
-                id: 'host',
-                name: gameState.playerName + " (Host)",
-                color: gameState.playerColor,
-                isAi: false,
-                progress: 0,
-                streak: 0,
-                totalCorrect: 0,
-                totalWrong: 0,
-                isFinished: false,
-                finishTime: 0
-            }];
-            updateLobbyUI();
-        }
-
-        function handlePeerData(connId, data) {
-            if (data.type === 'JOIN') {
-                const playerId = data.id || connId;
-                const newPlayer = {
-                    id: playerId,
-                    name: data.name,
-                    color: data.color,
-                    isAi: false,
-                    progress: 0,
-                    streak: 0,
-                    totalCorrect: 0,
-                    totalWrong: 0,
-                    isFinished: false,
-                    finishTime: 0
-                };
-                const existingIdx = gameState.players.findIndex(p => p.id === playerId);
-                if (existingIdx >= 0) {
-                    gameState.players[existingIdx] = { ...gameState.players[existingIdx], ...newPlayer };
-                } else {
-                    gameState.players.push(newPlayer);
-                }
-                updateLobbyUI();
-                broadcastLobbyState();
-            } else if (data.type === 'PROGRESS_UPDATE') {
-                const player = gameState.players.find(p => p.id === (data.id || connId));
-                if (player) {
-                    player.progress = data.progress;
-                    player.streak = data.streak;
-                    player.totalCorrect = data.totalCorrect;
-                    player.totalWrong = data.totalWrong;
-                    if (data.isFinished) {
-                        player.isFinished = true;
-                        player.finishTime = data.finishTime;
-                    }
-                }
-                broadcastRaceState();
-                checkGameFinished();
-            }
-        }
-
-        function handleClientPeerData(data) {
-            if (data.type === 'LOBBY_STATE') {
-                mergePlayerData(data.players);
-                showLobbyScreen();
-                updateLobbyUI();
-            } else if (data.type === 'START_GAME') {
-                gameState.difficulty = data.difficulty;
-                gameState.digits = data.digits;
-                mergePlayerData(data.players);
-                gameState.questions = generateMathQuestions(data.difficulty, data.digits);
-                startRaceUI();
-            } else if (data.type === 'RACE_STATE') {
-                mergePlayerData(data.players);
-                checkGameFinished();
-            } else if (data.type === 'GAME_OVER') {
-                mergePlayerData(data.players);
-                showResultsScreen();
-            } else if (data.type === 'FULL') {
-                showModal("ROOM FULL", "This race room is already full (max 4 players).");
-            }
-        }
-
-        function broadcastRaceState() {
-            if (gameState.isHost) {
-                const msg = {
-                    type: 'RACE_STATE',
-                    players: gameState.players.map(p => ({
-                        id: p.id,
-                        name: p.name,
-                        color: p.color,
-                        isAi: p.isAi,
-                        progress: p.progress,
-                        streak: p.streak,
-                        totalCorrect: p.totalCorrect,
-                        totalWrong: p.totalWrong,
-                        isFinished: p.isFinished,
-                        finishTime: p.finishTime
-                    }))
-                };
-                Object.values(gameState.connections).forEach(conn => conn.send(msg));
-            } else if (gameState.connections['host']) {
-                const me = getLocalPlayer();
-                if (me) {
-                    gameState.connections['host'].send({
-                        type: 'PROGRESS_UPDATE',
-                        id: gameState.myPlayerId,
-                        progress: me.progress,
-                        streak: gameState.streak,
-                        totalCorrect: gameState.totalCorrect,
-                        totalWrong: gameState.totalWrong,
-                        isFinished: me.isFinished,
-                        finishTime: me.finishTime
-                    });
-                }
-            }
-        }
-
-        function formatEquationText(eq) {
-            if (eq.includes('=')) {
-                return eq;
-            }
-            return `${eq} = ?`;
+        function clearAnswer() {
+            playSfx('click');
+            highlightKeyBtn('key-clear');
+            const input = document.getElementById('answerInput');
+            if (input) input.value = '';
         }
 
         function displayCurrentQuestion() {
-            if (gameState.currentQIndex >= gameState.questions.length) return;
+            const me = getLocalPlayer();
+            if (gameState.currentQIndex >= gameState.questions.length) {
+                finishLocalRace();
+                return;
+            }
+            const q = gameState.questions[gameState.currentQIndex];
+            document.getElementById('qProgressNum').innerText = gameState.currentQIndex + 1;
+            document.getElementById('questionDisplay').innerText = q.text;
+            document.getElementById('answerInput').value = '';
+            document.getElementById('hudStreak').innerText = `${gameState.streak} 🔥`;
 
-            const currentQ = gameState.questions[gameState.currentQIndex];
-            if (!currentQ) return;
+            // Update Track Progress Bar
+            const progBar = document.getElementById('raceProgressBar');
+            if (progBar) {
+                const percent = ((gameState.currentQIndex) / gameState.questions.length) * 100;
+                progBar.style.width = `${percent}%`;
+            }
 
-            document.getElementById('qCounter').innerText = Math.min(gameState.currentQIndex + 1, 10);
-            document.getElementById('equationDisplay').innerText = formatEquationText(currentQ.eq);
-            document.getElementById('streakCounter').innerText = gameState.streak;
-
-            gameState.userInput = "";
-            updateAnswerInputText();
+            updateHUDLeaderboard();
         }
 
         function submitAnswer() {
-            if (!gameState.userInput) return;
+            highlightKeyBtn('key-enter');
+            const input = document.getElementById('answerInput');
+            if (!input || input.value === '' || input.value === '-') return;
 
-            const me = getLocalPlayer();
-            if (!me) return;
-
-            if (gameState.currentQIndex >= gameState.questions.length) return;
+            const userVal = parseInt(input.value, 10);
             const currentQ = gameState.questions[gameState.currentQIndex];
-            if (!currentQ) return;
+            const me = getLocalPlayer();
 
-            const userAns = parseInt(gameState.userInput, 10);
-
-            if (userAns === currentQ.answer) {
-                playRetroSound('correct');
-                showFeedback("CORRECT! +NITRO BOOST 🚀", "#10b981");
-
+            if (userVal === currentQ.answer) {
+                // Correct Answer!
+                playSfx('correct');
+                playSfx('boost');
                 gameState.streak++;
                 gameState.totalCorrect++;
-                gameState.currentQIndex++;
-
-                me.progress = gameState.currentQIndex;
+                me.progress = (me.progress || 0) + 1;
                 me.streak = gameState.streak;
                 me.totalCorrect = gameState.totalCorrect;
-                me.totalWrong = gameState.totalWrong;
 
                 if (me.mesh) {
                     triggerNitroParticles(me.mesh);
                 }
 
-                if (me.progress >= 10) {
-                    me.isFinished = true;
-                    me.finishTime = Date.now() - gameState.startTime;
-                }
-
-                if (gameState.isMultiplayer) {
-                    broadcastRaceState();
-                }
-
-                if (me.isFinished || gameState.currentQIndex >= 10) {
-                    checkGameFinished();
-                } else {
-                    displayCurrentQuestion();
-                }
+                gameState.currentQIndex++;
+                broadcastRaceState();
+                displayCurrentQuestion();
 
             } else {
-                playRetroSound('wrong');
-                showFeedback("WRONG! SPIN OUT 🌀", "#ef4444");
-
-                const consoleElem = document.getElementById('mathConsole');
-                consoleElem.classList.add('shake');
-                setTimeout(() => consoleElem.classList.remove('shake'), 350);
-
+                // Wrong Answer!
+                playSfx('wrong');
                 gameState.streak = 0;
                 gameState.totalWrong++;
-                document.getElementById('streakCounter').innerText = 0;
+                me.streak = 0;
+                me.totalWrong = gameState.totalWrong;
 
-                gameState.userInput = "";
-                updateAnswerInputText();
+                const card = document.getElementById('mathCard');
+                card.classList.add('shake');
+                setTimeout(() => card.classList.remove('shake'), 400);
+
+                input.value = '';
+                document.getElementById('hudStreak').innerText = `0 🔥`;
+                broadcastRaceState();
             }
         }
 
         window.addEventListener('keydown', (e) => {
             if (document.getElementById('gameScreen').classList.contains('hidden')) return;
-
             if (e.key >= '0' && e.key <= '9') {
                 pressKey(e.key);
-            } else if (e.key === '-' || e.key === 'Subtract') {
+            } else if (e.key === '-') {
                 pressKey('-');
-            } else if (e.key === 'Backspace') {
-                e.preventDefault();
-                clearAnswer();
+            } else if (e.key === 'Backspace' || e.key === 'Delete') {
+                backspaceAnswer();
             } else if (e.key === 'Enter') {
-                e.preventDefault();
                 submitAnswer();
             }
         });
 
-        function submitAnswer() {
-            if (!gameState.userInput) return;
+        function startSinglePlayerGame() {
+            initAudio();
+            gameState.mode = 'solo';
+            gameState.isHost = false;
+            gameState.playerName = document.getElementById('playerName').value.trim() || "Speedy Racer";
 
-            const userAns = parseInt(gameState.userInput, 10);
-            const currentQ = gameState.questions[gameState.currentQIndex];
+            gameState.players = [
+                { id: gameState.myPlayerId, name: gameState.playerName, color: gameState.kartColor, lane: 0, progress: 0, streak: 0, totalCorrect: 0, totalWrong: 0, isAi: false },
+                { id: "ai_1", name: "Turbo Bot", color: "#3b82f6", lane: 1, progress: 0, streak: 0, totalCorrect: 0, totalWrong: 0, isAi: true },
+                { id: "ai_2", name: "Math Bot 3000", color: "#10b981", lane: 2, progress: 0, streak: 0, totalCorrect: 0, totalWrong: 0, isAi: true },
+                { id: "ai_3", name: "Nitro Comet", color: "#f59e0b", lane: 3, progress: 0, streak: 0, totalCorrect: 0, totalWrong: 0, isAi: true }
+            ];
 
-            if (userAns === currentQ.answer) {
-                playRetroSound('correct');
-                showFeedback("CORRECT! +NITRO BOOST 🚀", "#10b981");
+            gameState.questions = generateMathQuestions(gameState.difficulty, gameState.digits, 10);
+            startRaceUI();
+            startAiLogic();
+        }
 
-                gameState.streak++;
-                gameState.totalCorrect++;
-                gameState.currentQIndex++;
+        function startAiLogic() {
+            const aiPlayers = gameState.players.filter(p => p.isAi);
+            aiPlayers.forEach(ai => {
+                function aiTick() {
+                    if (document.getElementById('gameScreen').classList.contains('hidden')) return;
+                    if (ai.progress < 10 && !ai.isFinished) {
+                        // AI delay based on difficulty
+                        let delay = 3500;
+                        if (gameState.difficulty === 'intermediate') delay = 4500;
+                        if (gameState.difficulty === 'advanced') delay = 5500;
 
-                const me = getLocalPlayer();
-
-                if (me) {
-                    me.progress = gameState.currentQIndex;
-                    if (me.mesh) {
-                        triggerNitroParticles(me.mesh);
+                        // AI answer accuracy ~ 85%
+                        if (Math.random() < 0.85) {
+                            ai.progress = (ai.progress || 0) + 1;
+                            ai.totalCorrect = (ai.totalCorrect || 0) + 1;
+                            if (ai.mesh) triggerNitroParticles(ai.mesh);
+                            if (ai.progress >= 10) {
+                                ai.isFinished = true;
+                                ai.finishTime = ((Date.now() - gameState.startTime) / 1000).toFixed(2);
+                            }
+                        }
+                        updateHUDLeaderboard();
+                        setTimeout(aiTick, delay + Math.random() * 2000);
                     }
-                    if (me.progress >= 10) {
-                        me.isFinished = true;
-                        me.finishTime = Date.now() - gameState.startTime;
-                    }
                 }
+                setTimeout(aiTick, 2000 + Math.random() * 2000);
+            });
+        }
 
-                if (gameState.isMultiplayer) {
-                    broadcastRaceState();
+        function hostMultiplayerLobby() {
+            initAudio();
+            gameState.mode = 'host';
+            gameState.isHost = true;
+            gameState.playerName = document.getElementById('playerName').value.trim() || "Host Racer";
+
+            const randomRoom = "RACER-" + Math.floor(1000 + Math.random() * 9000);
+            gameState.peer = new Peer(randomRoom);
+
+            gameState.peer.on('open', (id) => {
+                gameState.roomCode = id;
+                document.getElementById('roomCodeDisplay').innerText = id;
+                document.getElementById('homeScreen').classList.add('hidden');
+                document.getElementById('lobbyScreen').classList.remove('hidden');
+
+                gameState.players = [
+                    { id: gameState.myPlayerId, name: gameState.playerName, color: gameState.kartColor, lane: 0, progress: 0, streak: 0, totalCorrect: 0, totalWrong: 0, isAi: false }
+                ];
+                updateLobbyUI();
+            });
+
+            gameState.peer.on('connection', (conn) => {
+                conn.on('data', (data) => {
+                    handlePeerMessage(conn, data);
+                });
+                conn.on('close', () => {
+                    gameState.players = gameState.players.filter(p => p.id !== conn.peer);
+                    updateLobbyUI();
+                    broadcastLobbyState();
+                });
+            });
+
+            gameState.peer.on('error', (err) => {
+                alert("PeerJS Connection Error: " + err.type);
+            });
+        }
+
+        function openJoinModal() {
+            document.getElementById('joinModal').classList.remove('hidden');
+        }
+
+        function closeJoinModal() {
+            document.getElementById('joinModal').classList.add('hidden');
+        }
+
+        function joinMultiplayerLobby() {
+            initAudio();
+            const code = document.getElementById('joinRoomCode').value.trim().toUpperCase();
+            if (!code) return;
+
+            gameState.mode = 'client';
+            gameState.isHost = false;
+            gameState.playerName = document.getElementById('playerName').value.trim() || "Guest Racer";
+
+            gameState.players = [
+                { id: gameState.myPlayerId, name: gameState.playerName, color: gameState.kartColor, lane: 0, progress: 0, streak: 0, totalCorrect: 0, totalWrong: 0, isAi: false }
+            ];
+
+            gameState.peer = new Peer();
+
+            gameState.peer.on('open', () => {
+                const conn = gameState.peer.connect(code);
+                gameState.connections[code] = conn;
+
+                conn.on('open', () => {
+                    closeJoinModal();
+                    document.getElementById('homeScreen').classList.add('hidden');
+                    document.getElementById('lobbyScreen').classList.remove('hidden');
+                    document.getElementById('roomCodeDisplay').innerText = code;
+                    document.getElementById('btnHostStart').classList.add('hidden');
+
+                    conn.send({
+                        type: 'JOIN',
+                        id: gameState.myPlayerId,
+                        name: gameState.playerName,
+                        color: gameState.kartColor
+                    });
+                });
+
+                conn.on('data', (data) => {
+                    handlePeerMessage(conn, data);
+                });
+            });
+        }
+
+        function handlePeerMessage(conn, data) {
+            if (data.type === 'JOIN' && gameState.isHost) {
+                if (gameState.players.length < 4) {
+                    const assignedLane = gameState.players.length;
+                    gameState.players.push({
+                        id: data.id,
+                        name: data.name,
+                        color: data.color,
+                        lane: assignedLane,
+                        progress: 0,
+                        streak: 0,
+                        totalCorrect: 0,
+                        totalWrong: 0,
+                        isAi: false
+                    });
+                    gameState.connections[data.id] = conn;
+                    updateLobbyUI();
+                    broadcastLobbyState();
                 }
-
-                if (gameState.currentQIndex >= 10) {
-                    checkGameFinished();
-                } else {
-                    displayCurrentQuestion();
-                }
-
-            } else {
-                playRetroSound('wrong');
-                showFeedback("WRONG! SPIN OUT 🌀", "#ef4444");
-
-                const consoleElem = document.getElementById('mathConsole');
-                consoleElem.classList.add('shake');
-                setTimeout(() => consoleElem.classList.remove('shake'), 350);
-
-                gameState.streak = 0;
-                gameState.totalWrong++;
-                document.getElementById('streakCounter').innerText = 0;
-
-                gameState.userInput = "";
-                updateAnswerInputText();
+            } else if (data.type === 'LOBBY_UPDATE') {
+                mergePlayerData(data.players);
+                updateLobbyUI();
+            } else if (data.type === 'START_GAME') {
+                gameState.difficulty = data.difficulty;
+                gameState.digits = data.digits;
+                mergePlayerData(data.players);
+                gameState.questions = generateMathQuestions(gameState.difficulty, gameState.digits, 10);
+                startRaceUI();
+            } else if (data.type === 'RACE_STATE') {
+                mergePlayerData(data.players);
+                updateHUDLeaderboard();
             }
         }
 
-        function showFeedback(text, color) {
-            const banner = document.getElementById('feedbackBanner');
-            banner.innerText = text;
-            banner.style.color = color;
-            banner.style.opacity = '1';
-            setTimeout(() => {
-                banner.style.opacity = '0';
-            }, 800);
+        function mergePlayerData(newPlayers) {
+            if (!Array.isArray(newPlayers)) return;
+
+            newPlayers.forEach(np => {
+                // Strictly match players by unique ID to avoid name collisions
+                let existing = gameState.players.find(p => p.id === np.id);
+                if (existing) {
+                    existing.name = np.name;
+                    if (np.lane !== undefined) existing.lane = np.lane;
+                    if (existing.color !== np.color) {
+                        existing.color = np.color || "#ff0055";
+                        if (existing.mesh) {
+                            updateKartColor(existing.mesh, existing.color);
+                        }
+                    }
+
+                    if (existing.id !== gameState.myPlayerId) {
+                        existing.progress = np.progress !== undefined ? np.progress : (existing.progress || 0);
+                        existing.streak = np.streak !== undefined ? np.streak : (existing.streak || 0);
+                        existing.totalCorrect = np.totalCorrect !== undefined ? np.totalCorrect : (existing.totalCorrect || 0);
+                        existing.totalWrong = np.totalWrong !== undefined ? np.totalWrong : (existing.totalWrong || 0);
+                        if (np.isFinished !== undefined) existing.isFinished = np.isFinished;
+                        if (np.finishTime !== undefined) existing.finishTime = np.finishTime;
+                    } else if (np.isFinished) {
+                        existing.isFinished = true;
+                        existing.finishTime = np.finishTime;
+                    }
+                } else {
+                    const newEntry = {
+                        lane: np.lane !== undefined ? np.lane : gameState.players.length,
+                        progress: 0,
+                        streak: 0,
+                        totalCorrect: 0,
+                        totalWrong: 0,
+                        isFinished: false,
+                        finishTime: 0,
+                        ...np
+                    };
+                    gameState.players.push(newEntry);
+                    if (gameState.raceScene && !newEntry.mesh) {
+                        const laneIdx = (newEntry.lane !== undefined ? newEntry.lane : gameState.players.length - 1) % 4;
+                        const kart = create3DKart(newEntry.color || "#ff0055");
+                        kart.position.set(LANE_X[laneIdx], 0, 15);
+                        gameState.raceScene.add(kart);
+                        newEntry.mesh = kart;
+                    }
+                }
+            });
+
+            // Sync 3D kart X-position to strictly match assigned lane
+            gameState.players.forEach(p => {
+                if (p.mesh && p.lane !== undefined) {
+                    const laneIdx = p.lane % 4;
+                    p.mesh.position.x = LANE_X[laneIdx];
+                }
+            });
+        }
+
+        function broadcastLobbyState() {
+            if (!gameState.isHost) return;
+            const msg = {
+                type: 'LOBBY_UPDATE',
+                players: gameState.players
+            };
+            Object.values(gameState.connections).forEach(conn => conn.send(msg));
+        }
+
+        function broadcastRaceState() {
+            const me = getLocalPlayer();
+            const msg = {
+                type: 'RACE_STATE',
+                players: gameState.players.map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    color: p.color,
+                    lane: p.lane,
+                    progress: p.progress || 0,
+                    streak: p.streak || 0,
+                    totalCorrect: p.totalCorrect || 0,
+                    totalWrong: p.totalWrong || 0,
+                    isFinished: p.isFinished || false,
+                    finishTime: p.finishTime || 0
+                }))
+            };
+            if (gameState.isHost) {
+                Object.values(gameState.connections).forEach(conn => conn.send(msg));
+            } else if (gameState.mode === 'client') {
+                const conn = Object.values(gameState.connections)[0];
+                if (conn) conn.send(msg);
+            }
+        }
+
+        function updateLobbyUI() {
+            const list = document.getElementById('lobbyPlayerList');
+            if (!list) return;
+            list.innerHTML = '';
+            document.getElementById('playerCount').innerText = gameState.players.length;
+
+            const sortedLobby = [...gameState.players].sort((a, b) => (a.lane ?? 0) - (b.lane ?? 0));
+
+            sortedLobby.forEach(p => {
+                const item = document.createElement('div');
+                item.className = "flex items-center justify-between bg-slate-800/80 p-3 rounded-xl border border-slate-700";
+                item.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-5 h-5 rounded-full border border-white" style="background-color: ${p.color}"></div>
+                        <span class="font-bold text-white">${p.name} ${p.id === gameState.myPlayerId ? '(You)' : ''}</span>
+                    </div>
+                    <span class="text-xs bg-slate-900 px-2.5 py-1 rounded-full font-semibold text-amber-400 border border-slate-700">LANE ${(p.lane !== undefined ? p.lane : 0) + 1}</span>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function copyRoomCode() {
+            const code = document.getElementById('roomCodeDisplay').innerText;
+            navigator.clipboard.writeText(code);
+            alert("Room Code copied: " + code);
+        }
+
+        function leaveLobby() {
+            if (gameState.peer) gameState.peer.destroy();
+            document.getElementById('lobbyScreen').classList.add('hidden');
+            document.getElementById('homeScreen').classList.remove('hidden');
+        }
+
+        function hostStartMultiplayerGame() {
+            if (!gameState.isHost) return;
+            initAudio();
+
+            // Reset progress state & ensure explicit lane assignment for all connected players
+            gameState.players.forEach((p, idx) => {
+                p.lane = p.lane !== undefined ? p.lane : idx;
+                p.progress = 0;
+                p.streak = 0;
+                p.totalCorrect = 0;
+                p.totalWrong = 0;
+                p.isFinished = false;
+                p.finishTime = 0;
+            });
+
+            const msg = {
+                type: 'START_GAME',
+                difficulty: gameState.difficulty,
+                digits: gameState.digits,
+                players: gameState.players.map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    color: p.color,
+                    lane: p.lane,
+                    isAi: p.isAi,
+                    progress: 0,
+                    streak: 0,
+                    totalCorrect: 0,
+                    totalWrong: 0,
+                    isFinished: false,
+                    finishTime: 0
+                }))
+            };
+
+            Object.values(gameState.connections).forEach(conn => conn.send(msg));
+            gameState.questions = generateMathQuestions(gameState.difficulty, gameState.digits);
+            startRaceUI();
+        }
+
+        function startRaceUI() {
+            document.getElementById('homeScreen').classList.add('hidden');
+            document.getElementById('lobbyScreen').classList.add('hidden');
+            document.getElementById('resultsScreen').classList.add('hidden');
+            document.getElementById('gameScreen').classList.remove('hidden');
+
+            gameState.currentQIndex = 0;
+            gameState.streak = 0;
+            gameState.totalCorrect = 0;
+            gameState.totalWrong = 0;
+            gameState.startTime = Date.now();
+
+            // Ensure all players start at progress 0
+            gameState.players.forEach(p => {
+                p.progress = 0;
+                p.streak = 0;
+                p.totalCorrect = 0;
+                p.totalWrong = 0;
+                p.isFinished = false;
+                p.finishTime = 0;
+            });
+
+            displayCurrentQuestion();
+            startTimer();
+            init3DRaceScene();
         }
 
         function startTimer() {
-            clearInterval(gameState.timerInterval);
+            if (gameState.timerInterval) clearInterval(gameState.timerInterval);
             gameState.timerInterval = setInterval(() => {
-                const elapsedSec = Math.floor((Date.now() - gameState.startTime) / 1000);
-                const mins = String(Math.floor(elapsedSec / 60)).padStart(2, '0');
-                const secs = String(elapsedSec % 60).padStart(2, '0');
-                document.getElementById('gameTimer').innerText = `${mins}:${secs}`;
+                const elapsedSeconds = Math.floor((Date.now() - gameState.startTime) / 1000);
+                const mins = String(Math.floor(elapsedSeconds / 60)).padStart(2, '0');
+                const secs = String(elapsedSeconds % 60).padStart(2, '0');
+                const timerElem = document.getElementById('hudTimer');
+                if (timerElem) timerElem.innerText = `${mins}:${secs}`;
             }, 1000);
         }
 
-        /* ==========================================================================
-           GAME OVER & RESULTS SCREEN
-           ========================================================================== */
-        function checkGameFinished() {
-            const me = getLocalPlayer();
+        function updateHUDLeaderboard() {
+            const board = document.getElementById('hudLeaderboard');
+            if (!board) return;
+            board.innerHTML = '';
 
-            if (me && me.isFinished) {
-                setTimeout(() => {
-                    if (gameState.isHost) {
-                        broadcastRaceState();
-                        if (gameState.isMultiplayer) {
-                            Object.values(gameState.connections).forEach(c => c.send({
-                                type: 'GAME_OVER',
-                                players: gameState.players
-                            }));
-                        }
-                    }
-                    showResultsScreen();
-                }, 500);
-            }
+            const sorted = [...gameState.players].sort((a, b) => (b.progress || 0) - (a.progress || 0));
+            sorted.forEach((p, index) => {
+                const row = document.createElement('div');
+                row.className = "flex justify-between items-center text-xs";
+                row.innerHTML = `
+                    <div class="flex items-center gap-1.5 truncate">
+                        <span class="font-bold ${index === 0 ? 'text-amber-400' : 'text-slate-400'}">#${index + 1}</span>
+                        <span class="w-2.5 h-2.5 rounded-full" style="background:${p.color}"></span>
+                        <span class="truncate font-semibold ${p.id === gameState.myPlayerId ? 'text-amber-300' : 'text-slate-200'}">${p.name}</span>
+                    </div>
+                    <span class="font-bold text-emerald-400">${p.progress || 0}/10</span>
+                `;
+                board.appendChild(row);
+            });
+        }
+
+        function finishLocalRace() {
+            const me = getLocalPlayer();
+            me.isFinished = true;
+            me.finishTime = ((Date.now() - gameState.startTime) / 1000).toFixed(2);
+            broadcastRaceState();
+
+            playSfx('win');
+            clearInterval(gameState.timerInterval);
+
+            setTimeout(() => {
+                showResultsScreen();
+            }, 1000);
         }
 
         function showResultsScreen() {
-            clearInterval(gameState.timerInterval);
-            playRetroSound('win');
-
             document.getElementById('gameScreen').classList.add('hidden');
             document.getElementById('resultsScreen').classList.remove('hidden');
 
-            const standings = [...gameState.players].sort((a, b) => {
-                if (b.progress !== a.progress) return b.progress - a.progress;
-                return a.finishTime - b.finishTime;
+            const list = document.getElementById('resultsList');
+            list.innerHTML = '';
+
+            const sorted = [...gameState.players].sort((a, b) => {
+                if ((b.progress || 0) !== (a.progress || 0)) {
+                    return (b.progress || 0) - (a.progress || 0);
+                }
+                return (a.finishTime || 999) - (b.finishTime || 999);
             });
 
-            const winner = standings[0];
-            document.getElementById('winnerSubtitle').innerText = `${winner.name} WINS THE 3D TROPHY! 🏆`;
-
-            const standingsContainer = document.getElementById('standingsContainer');
-            standingsContainer.innerHTML = '';
-
-            standings.forEach((p, idx) => {
+            sorted.forEach((p, idx) => {
                 const row = document.createElement('div');
-                row.className = "flex justify-between items-center bg-purple-900/80 p-3.5 rounded-xl border border-purple-400 font-title text-base";
-                
-                const timeSec = p.finishTime ? (p.finishTime / 1000).toFixed(1) + 's' : 'DNF';
-                
+                row.className = `flex items-center justify-between p-4 rounded-2xl border ${idx === 0 ? 'bg-amber-500/20 border-amber-400' : 'bg-slate-900/60 border-slate-700'}`;
                 row.innerHTML = `
-                    <div class="flex items-center space-x-3">
-                        <span class="${idx === 0 ? 'text-yellow-300 text-lg' : 'text-purple-300'}">#${idx + 1}</span>
-                        <div class="w-5 h-5 rounded-full border-2 border-white shadow" style="background-color: ${p.color}"></div>
-                        <span class="text-white">${p.name}</span>
+                    <div class="flex items-center gap-4">
+                        <span class="text-2xl font-title ${idx === 0 ? 'text-amber-400' : 'text-slate-400'}">#${idx + 1}</span>
+                        <div class="w-6 h-6 rounded-full border border-white" style="background-color: ${p.color}"></div>
+                        <div class="text-left">
+                            <div class="font-bold text-lg text-white">${p.name} ${p.id === gameState.myPlayerId ? '(You)' : ''}</div>
+                            <div class="text-xs text-slate-400">Time: ${p.finishTime ? p.finishTime + 's' : 'DNF'}</div>
+                        </div>
                     </div>
-                    <span class="text-pink-400 font-bold">${timeSec}</span>
+                    <div class="text-right">
+                        <div class="text-xl font-title text-emerald-400">${p.progress || 0}/10 Correct</div>
+                    </div>
                 `;
-                standingsContainer.appendChild(row);
+                list.appendChild(row);
             });
-
-            const totalAttempts = gameState.totalCorrect + gameState.totalWrong;
-            const accuracy = totalAttempts > 0 ? Math.round((gameState.totalCorrect / totalAttempts) * 100) : 100;
-            const elapsedSec = Math.floor((Date.now() - gameState.startTime) / 1000);
-            const mins = String(Math.floor(elapsedSec / 60)).padStart(2, '0');
-            const secs = String(elapsedSec % 60).padStart(2, '0');
-
-            document.getElementById('statTime').innerText = `${mins}:${secs}`;
-            document.getElementById('statAccuracy').innerText = `${accuracy}%`;
-            document.getElementById('statStreak').innerText = gameState.streak;
         }
 
-        function returnToHome() {
-            if (gameState.peer) {
-                gameState.peer.destroy();
-                gameState.peer = null;
-            }
+        function returnToMainMenu() {
+            if (gameState.timerInterval) clearInterval(gameState.timerInterval);
             document.getElementById('resultsScreen').classList.add('hidden');
             document.getElementById('homeScreen').classList.remove('hidden');
-            init3DPreview();
         }
 
-        window.onload = function () {
+        // On Load Initialization
+        window.onload = function() {
             init3DPreview();
         };
     </script>
